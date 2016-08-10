@@ -1,0 +1,3 @@
+[submodule "meta-serialization"]
+	path = meta-serialization
+	url = https://github.com/motonacciu/meta-serialization
