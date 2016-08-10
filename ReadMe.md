@@ -12,3 +12,10 @@ Name | Total | Used | Free | Shared | Buff/Cache | Available
 --- | --- | --- | --- | --- | --- | ---
 Mem  | 32,907,204 | 4,736,848 | 3,461,980 | 257,004 | 24,708,376 | 27,729,972  
 Swap | 16,516,092  | 2,512 | 16,513,580 | /  | /  |  /      
+
+###Optimization I/O with C++11 Support
+- I/O buffers
+  - Instead of doing many I/O operations on single small or tiny objects, do I/O operations on a 4 KB buffer containing many objects.
+
+- Memory-mapped file
+  - Except in a critical section of a real-time system, if you need to access most parts of a binary file in a non-sequential fashion, instead of accessing it repeatedly with seek operations, or loading it all in an application buffer, use a memory-mapped file, if your operating system provides such feature.
