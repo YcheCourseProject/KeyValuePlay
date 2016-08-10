@@ -22,7 +22,7 @@ Swap | 16,516,092  | 2,512 | 16,513,580 | /  | /  |  /
   - Except in a critical section of a real-time system, if you need to access most parts of a binary file in a non-sequential fashion, instead of accessing it repeatedly with seek operations, or loading it all in an application buffer, use a memory-mapped file, if your operating system provides such feature.
   
 ###Tools Usage
-- [meta-serialization submodule](./meta-serialization)   
+- [meta-serialization submodule](https://github.com/motonacciu/meta-serialization)   
     - submodule init
     ```zsh
     git submodule init   
