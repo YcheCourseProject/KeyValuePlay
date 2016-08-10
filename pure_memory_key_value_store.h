@@ -2,18 +2,20 @@
 // Created by cheyulin on 8/10/16.
 //
 
-#ifndef KeyValueStore_KEY_VALUE_STORE_H
-#define KeyValueStore_KEY_VALUE_STORE_H
+#ifndef KEYVALUESTORE_PURE_MEMORY_KEY_VALUE_STORE_H
+#define KEYVALUESTORE_PURE_MEMORY_KEY_VALUE_STORE_H
 
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <unordered_map>
 
 using namespace std;
 
-//对于一组KV，以K作为文件名，V作为文件内容来存储
-//这是一个性能相对较差的实现，瓶颈在于当Key的个数大于100万之后，Linux的文件索引就会特别慢。并且对于每个Key而言都需要打开1个文件句柄，然后写完Value之后再关掉。
 class PureMemoryStore {
+private:
+    unordered_map<string, string> yche_map_;
+
 public: //put和get方法要求public
     PureMemoryStore() {
         //可以在构造函数中放入初始化内容，但这个方案不需要初始化
@@ -39,4 +41,4 @@ public: //put和get方法要求public
     }
 };
 
-#endif //INMEMORYKEYVALUESTOREWITHPERSISTENCE_KEY_VALUE_STORE_H
+#endif //KEYVALUESTORE_PURE_MEMORY_KEY_VALUE_STORE_H
