@@ -30,3 +30,9 @@ Swap | 16,516,092  | 2,512 | 16,513,580 | /  | /  |  /
     ```   
     - [meta-serialization blog](http://cpplove.blogspot.hk/2013/05/my-take-on-c-serialization-part-i.html)
     
+###Strategy
+- files-organization: 
+    - key-directory(use b+ tree to implement the fast search, the content of which contains value and status)
+    - status is used to keep the transaction correct, replace the previous one and set status true, when set false?
+- memory- unordered_set
+- serialization, string to uint8 bytes
