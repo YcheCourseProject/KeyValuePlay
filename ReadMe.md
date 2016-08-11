@@ -10,6 +10,7 @@ Key-Alignment | Value-Alignment-Old | Value-Alignment-New | flag-for-transaction
 
 ###Key-Value is string, string type
 - string holds [base64](https://en.wikipedia.org/wiki/Base64)
+- serialization could be conducted with compact base64 encoding
 
 ###Not Require LRU-Cache, get(), put() is in random manner
 

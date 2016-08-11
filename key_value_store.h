@@ -13,9 +13,9 @@ using namespace std;
 
 //对于一组KV，以K作为文件名，V作为文件内容来存储
 //这是一个性能相对较差的实现，瓶颈在于当Key的个数大于100万之后，Linux的文件索引就会特别慢。并且对于每个Key而言都需要打开1个文件句柄，然后写完Value之后再关掉。
-class PureMemoryStore {
+class Answer {
 public: //put和get方法要求public
-    PureMemoryStore() {
+    Answer() {
         //可以在构造函数中放入初始化内容，但这个方案不需要初始化
         //当由于断电等原因造成的程序重启，该构造函数会被执行，因此关于异常恢复的逻辑可以放在这里。
     }

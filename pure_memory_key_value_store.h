@@ -6,38 +6,71 @@
 #define KEYVALUESTORE_PURE_MEMORY_KEY_VALUE_STORE_H
 
 #include <string>
+#include <vector>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <unordered_map>
+#include <algorithm>
+#include "stdlib.h"
+#include "unistd.h"
 
 using namespace std;
 
-class PureMemoryStore {
+
+#define FILE_NAME "tuple_transaction.db"
+#define SEPERATOR ","
+#define SEPERATOR_END_CHAR ';'
+#define SEPERATOR_END_STRING ";"
+#define SEPERATOR_CHAR ','
+
+class Answer {
 private:
     unordered_map<string, string> yche_map_;
+    fstream output_file_stream_{nullptr};
+
+    pair<string, string> split(const string &str) {
+        pair<string, string> result;
+        auto iter_begin = str.begin();
+        auto iter_end = str.end();
+        auto iter_middle = find(iter_begin, iter_end, ',');
+        return std::move(make_pair(std::move(string(iter_begin, iter_middle)),
+                                   std::move(string(iter_middle + 1, iter_end - 1))));
+    }
 
 public: //put和get方法要求public
-    PureMemoryStore() {
-        //可以在构造函数中放入初始化内容，但这个方案不需要初始化
-        //当由于断电等原因造成的程序重启，该构造函数会被执行，因此关于异常恢复的逻辑可以放在这里。
+    Answer() {
+        fstream input_file_stream{FILE_NAME, ifstream::in};
+        string tmp_string;
+        for (; input_file_stream.good();) {
+            getline(input_file_stream, tmp_string);
+            if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
+                auto my_pair = std::move(split(tmp_string));
+                yche_map_[my_pair.first] = my_pair.second;
+            }
+        }
+        input_file_stream.close();
+        output_file_stream_ = std::move(fstream(FILE_NAME, ofstream::app));
+        output_file_stream_ << unitbuf;
+    }
+
+    virtual ~Answer() {
+        output_file_stream_.close();
     }
 
     string get(string key) { //读取KV
-        ifstream is(key);
-        if (is.good()) { //如果文件存在
-            string value;
-            is >> value; //读取文件内容
-            is.close();
-            return value; //返回
-        } else {
+        auto iter = yche_map_.find(key);
+        if (iter != yche_map_.end()) {
+            return iter->second;
+        }
+        else {
             return "NULL"; //文件不存在，说明该Key不存在，返回NULL
         }
     }
 
     void put(string key, string value) { //存储KV
-        ofstream os(key);
-        os << value; //创建一个文件，文件名为Key，文件内容为Value
-        os.close();
+        yche_map_[key] = value;
+        output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
     }
 };
 
