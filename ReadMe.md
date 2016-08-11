@@ -1,5 +1,19 @@
-##KeyValueStore
-###Problem Scope
+#Key-Value Store
+##Problem Feature
+###Key-Value alignment boundary is fixed as follows(Unit:Byte)
+
+Key-Alignment | Value-Alignment-Old | Value-Alignment-New | flag-for-transaction
+------------- | ------------------- | ------------------- | --------------------
+10~70         | 80~160              | 80~160              | 1
+10~300         | 1k~3k              | 1k~3k              | 1
+1k~3k         | 10k~30k              | 10k~30k              | 1
+
+###Key-Value is string, string type
+- string holds [base64](https://en.wikipedia.org/wiki/Base64)
+
+###Not Require LRU-Cache, get(), put() is in random manner
+
+##Problem Scope
 ###Allocation on Heap and Virtual-Memory
 - [malloc-test](./malloc-test) is used for the following memory operation with underlying glibc test.
 - Result: Allocated 45516587008(40G) bytes from 0x7f7e5afff010 to 0x7f88f3fff010
@@ -7,7 +21,7 @@
 ```zsh
 free
 ```
-- Detail      
+- Detail(Unit: Byte)  
 
 Name | Total | Used | Free | Shared | Buff/Cache | Available   
 --- | --- | --- | --- | --- | --- | ---
@@ -37,11 +51,9 @@ git submodule update
 - [trie tree](https://github.com/ytakano/radix_tree)  
   - STL like container of radix tree (a.k.a. PATRICIA trie) in C++
 
-
-
 ###Strategy
 - files-organization:
     - key-directory(use b+ tree to implement the fast search, the content of which contains value and status)
     - status is used to keep the transaction correct, replace the previous one and set status true, when set false?
-- memory- unordered_set
+- in-memory- unordered_set, trie tree, b+ tree
 - serialization, string to uint8 bytes
