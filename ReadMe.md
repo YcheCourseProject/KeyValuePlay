@@ -20,18 +20,27 @@ Swap | 16,516,092  | 2,512 | 16,513,580 | /  | /  |  /
 
 - Memory-mapped file
   - Except in a critical section of a real-time system, if you need to access most parts of a binary file in a non-sequential fashion, instead of accessing it repeatedly with seek operations, or loading it all in an application buffer, use a memory-mapped file, if your operating system provides such feature.
-  
+
 ###Tools Usage
+- submodule init
+```zsh
+git submodule init   
+git submodule update
+```   
+
 - [meta-serialization submodule](https://github.com/motonacciu/meta-serialization)   
-    - submodule init
-    ```zsh
-    git submodule init   
-    git submodule update
-    ```   
-    - [meta-serialization blog](http://cpplove.blogspot.hk/2013/05/my-take-on-c-serialization-part-i.html)
-    
+    - [meta-serializationblog](http://cpplove.blogspot.hk/2013/05/my-take-on-c-serialization-part-i.html)
+
+- [b+ tree](http://www.amittai.com/prose/bplustree.html)    
+  - specification: Abraham Silberschatz, Henry F. Korth, and S. Sudarshan, Database System Concepts, 5th ed. (New York: McGraw Hill, 2006), Section 12.3, 489-501
+
+- [trie tree](https://github.com/ytakano/radix_tree)  
+  - STL like container of radix tree (a.k.a. PATRICIA trie) in C++
+
+
+
 ###Strategy
-- files-organization: 
+- files-organization:
     - key-directory(use b+ tree to implement the fast search, the content of which contains value and status)
     - status is used to keep the transaction correct, replace the previous one and set status true, when set false?
 - memory- unordered_set

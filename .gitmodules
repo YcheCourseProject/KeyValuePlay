@@ -1,3 +1,6 @@
 [submodule "meta-serialization"]
 	path = meta-serialization
 	url = https://github.com/motonacciu/meta-serialization
+[submodule "radix_tree"]
+	path = radix_tree
+	url = https://github.com/ytakano/radix_tree
