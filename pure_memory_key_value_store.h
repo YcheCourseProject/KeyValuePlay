@@ -27,7 +27,8 @@ using namespace std;
 class Answer {
 private:
     unordered_map<string, string> yche_map_;
-    fstream output_file_stream_{nullptr};
+    fstream output_file_stream_;
+    size_t count{0};
 
     pair<string, string> split(const string &str) {
         pair<string, string> result;
@@ -42,20 +43,24 @@ public: //put和get方法要求public
     Answer() {
         fstream input_file_stream{FILE_NAME, ifstream::in};
         string tmp_string;
-        for (; input_file_stream.good();) {
-            getline(input_file_stream, tmp_string);
-            if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
-                auto my_pair = std::move(split(tmp_string));
-                yche_map_[my_pair.first] = my_pair.second;
+        if (input_file_stream.is_open()) {
+            for (; !input_file_stream.eof();) {
+                getline(input_file_stream, tmp_string);
+                if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
+                    auto my_pair = std::move(split(tmp_string));
+                    yche_map_[my_pair.first] = my_pair.second;
+                }
             }
+
         }
         input_file_stream.close();
-        output_file_stream_ = std::move(fstream(FILE_NAME, ofstream::app));
+        output_file_stream_.open(FILE_NAME, ofstream::app);
         output_file_stream_ << unitbuf;
     }
 
     virtual ~Answer() {
-        output_file_stream_.close();
+        if (output_file_stream_.is_open())
+            output_file_stream_.close();
     }
 
     string get(string key) { //读取KV
@@ -70,7 +75,11 @@ public: //put和get方法要求public
 
     void put(string key, string value) { //存储KV
         yche_map_[key] = value;
-        output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
+        count++;
+        if (count < 100)
+            output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << endl;
+        else if (count == 100)
+            output_file_stream_.close();
     }
 };
 

@@ -6,7 +6,7 @@
 
 int main() {
     Answer naive_store;
-    
+
     naive_store.put("get", "haha");
     cout << naive_store.get("get") << endl;
     cout << naive_store.get("get2") << endl;
