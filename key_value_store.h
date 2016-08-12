@@ -33,14 +33,17 @@ public: //put和get方法要求public
             for (epdf = readdir(dpdf); epdf;) {
                 string filename = std::move(epdf->d_name);
                 if (filename.size() > 7 && filename.substr(filename.size() - 7) == SUFFIX) {
-                    fstream input_stream{filename, ios::in};
-                    string value;
-                    input_stream >> value;
-                    auto iter_begin = filename.begin();
-                    auto iter_end = filename.end();
-                    auto iter_middle = find(iter_begin, iter_end, '.');
-                    string key(iter_begin, iter_middle);
-                    yche_map_.emplace(std::move(key), std::move(value));
+                    ifstream input_stream{filename};
+                    if (input_stream.good()) {
+                        string value;
+                        input_stream >> value;
+                        auto iter_begin = filename.begin();
+                        auto iter_end = filename.end();
+                        auto iter_middle = find(iter_begin, iter_end, '.');
+                        string key(iter_begin, iter_middle);
+                        yche_map_[std::move(key)] = std::move(value);
+                    }
+                    input_stream.close();
                 }
                 epdf = readdir(dpdf);
             }
@@ -61,6 +64,7 @@ public: //put和get方法要求public
         ofstream os(key + SUFFIX);
         os << value; //创建一个文件，文件名为Key，文件内容为Value
         os.close();
+        yche_map_[std::move(key)] = std::move(value);
     }
 };
 
