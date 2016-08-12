@@ -27,6 +27,8 @@ class Answer {
 private:
     unordered_map<string, string> yche_map_;
     fstream output_file_stream_;
+    size_t count{0};
+    bool first_time{true};
 
     pair<string, string> split(const string &str) {
         pair<string, string> result;
@@ -44,7 +46,6 @@ public: //put和get方法要求public
         if (input_file_stream.is_open()) {
             for (; !input_file_stream.eof();) {
                 getline(input_file_stream, tmp_string);
-                cout << "ReadIn:" << tmp_string << endl;
                 if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
                     auto my_pair = std::move(split(tmp_string));
                     yche_map_[my_pair.first] = my_pair.second;
@@ -53,8 +54,10 @@ public: //put和get方法要求public
 
         }
         input_file_stream.close();
+        if (yche_map_.size() >= 100000) {
+            first_time = false;
+        }
         output_file_stream_.open(FILE_NAME, std::ofstream::out | std::ofstream::app);
-        output_file_stream_ << unitbuf;
     }
 
     string get(string key) { //读取KV
@@ -69,7 +72,21 @@ public: //put和get方法要求public
 
     void put(string key, string value) { //存储KV
         yche_map_[key] = value;
+        count++;
         output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
+        if (first_time) {
+            if (yche_map_.size() < 100000) {
+                output_file_stream_ << flush;
+            }
+            else {
+                first_time = false;
+                count = 0;
+            }
+        }
+        else if (count > 1000) {
+            output_file_stream_ << flush;
+            count = 0;
+        }
     }
 };
 
