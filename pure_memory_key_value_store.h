@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <list>
 #include <cstddef>
+#include <functional>
 
 using namespace std;
 
@@ -20,7 +21,63 @@ using namespace std;
 #define SEPERATOR_END_STRING ";"
 #define SEPERATOR_CHAR ','
 
-std::hash<string> str_hash_func;
+std::hash<string> str_hash_func_basic;
+
+static const std::string base64_chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                "abcdefghijklmnopqrstuvwxyz"
+                "0123456789+/";
+
+
+static inline bool is_base64(unsigned char c) {
+    return (isalnum(c) || (c == '+') || (c == '/'));
+}
+
+
+std::string base64_encode(unsigned char const *bytes_to_encode, unsigned int in_len) {
+    std::string ret;
+    int i = 0;
+    int j = 0;
+    unsigned char char_array_3[3];
+    unsigned char char_array_4[4];
+
+    while (in_len--) {
+        char_array_3[i++] = *(bytes_to_encode++);
+        if (i == 3) {
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
+            for (i = 0; (i < 4); i++)
+                ret += base64_chars[char_array_4[i]];
+            i = 0;
+        }
+    }
+
+    if (i) {
+        for (j = i; j < 3; j++)
+            char_array_3[j] = '\0';
+        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+        char_array_4[3] = char_array_3[2] & 0x3f;
+        for (j = 0; (j < i + 1); j++)
+            ret += base64_chars[char_array_4[j]];
+        while ((i++ < 3))
+            ret += '=';
+    }
+    return std::move(ret);
+
+}
+
+inline std::string base_64_encoding_wrapper(const std::string &string_to_encode) {
+    return std::move(base64_encode(reinterpret_cast<const unsigned char *>(string_to_encode.c_str()),
+                                   string_to_encode.length()));
+}
+
+auto str_hash_func = [](const string &key) {
+    return str_hash_func_basic(base_64_encoding_wrapper(key));
+};
 
 template<size_t slot_num = 100000>
 class yche_string_string_map {
@@ -35,7 +92,7 @@ public:
     }
 
     inline string *find(const string &key) {
-        auto index = str_hash_func(key) % slot_num;
+        auto index = str_hash_func_basic(key) % slot_num;
         for (auto &my_pair:my_hash_table_[index]) {
             if (my_pair.first == key) {
                 return &my_pair.second;
@@ -46,7 +103,7 @@ public:
 
 
     inline void insert_or_replace(const string &key, const string &value) {
-        auto index = str_hash_func(key) % slot_num;
+        auto index = str_hash_func_basic(key) % slot_num;
         for (auto &my_pair:my_hash_table_[index]) {
             if (my_pair.first == key) {
                 my_pair.second = value;
@@ -61,7 +118,7 @@ public:
 
 class Answer {
 private:
-    yche_string_string_map<5000000> yche_map_;
+    yche_string_string_map<50000> yche_map_;
     fstream output_file_stream_;
     size_t count{0};
     bool first_time{true};
