@@ -2,6 +2,7 @@
 // Created by cheyulin on 8/10/16.
 //
 #include "pure_memory_key_value_store.h"
+#include <iostream>
 
 int main() {
     Answer naive_store;
