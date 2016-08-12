@@ -12,6 +12,7 @@
 #include <list>
 #include <cstddef>
 #include <functional>
+#include <unordered_set>
 
 using namespace std;
 
@@ -22,62 +23,6 @@ using namespace std;
 #define SEPERATOR_CHAR ','
 
 std::hash<string> str_hash_func_basic;
-
-static const std::string base64_chars =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                "abcdefghijklmnopqrstuvwxyz"
-                "0123456789+/";
-
-
-static inline bool is_base64(unsigned char c) {
-    return (isalnum(c) || (c == '+') || (c == '/'));
-}
-
-
-std::string base64_encode(unsigned char const *bytes_to_encode, unsigned int in_len) {
-    std::string ret;
-    int i = 0;
-    int j = 0;
-    unsigned char char_array_3[3];
-    unsigned char char_array_4[4];
-
-    while (in_len--) {
-        char_array_3[i++] = *(bytes_to_encode++);
-        if (i == 3) {
-            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-            char_array_4[3] = char_array_3[2] & 0x3f;
-            for (i = 0; (i < 4); i++)
-                ret += base64_chars[char_array_4[i]];
-            i = 0;
-        }
-    }
-
-    if (i) {
-        for (j = i; j < 3; j++)
-            char_array_3[j] = '\0';
-        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-        char_array_4[3] = char_array_3[2] & 0x3f;
-        for (j = 0; (j < i + 1); j++)
-            ret += base64_chars[char_array_4[j]];
-        while ((i++ < 3))
-            ret += '=';
-    }
-    return std::move(ret);
-
-}
-
-inline std::string base_64_encoding_wrapper(const std::string &string_to_encode) {
-    return std::move(base64_encode(reinterpret_cast<const unsigned char *>(string_to_encode.c_str()),
-                                   string_to_encode.length()));
-}
-
-auto str_hash_func = [](const string &key) {
-    return str_hash_func_basic(base_64_encoding_wrapper(key));
-};
 
 template<size_t slot_num = 100000>
 class yche_string_string_map {
@@ -113,15 +58,12 @@ public:
         my_hash_table_[index].push_back(make_pair(key, value));
         ++current_size_;
     }
-
 };
 
 class Answer {
 private:
-    yche_string_string_map<50000> yche_map_;
+    yche_string_string_map<100000> yche_map_;
     fstream output_file_stream_;
-    size_t count{0};
-    bool first_time{true};
 
     inline pair<string, string> split(const string &str) {
         auto iter_begin = str.begin();
@@ -158,9 +100,6 @@ public: //put和get方法要求public
             input_file_stream.close();
         }
 
-        if (yche_map_.size() >= 100000) {
-            first_time = false;
-        }
         output_file_stream_.open(FILE_NAME, std::ofstream::out | std::ofstream::app);
     }
 
@@ -175,22 +114,11 @@ public: //put和get方法要求public
     }
 
     inline void put(string key, string value) { //存储KV
-        yche_map_.insert_or_replace(key, value);
-        ++count;
         output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
-        if (first_time) {
-            if (yche_map_.size() < 100000) {
-                output_file_stream_ << flush;
-            }
-            else {
-                first_time = false;
-                count = 0;
-            }
-        }
-        else if (count > 5000) {
+        if (yche_map_.find(key) == nullptr) {
             output_file_stream_ << flush;
-            count = 0;
         }
+        yche_map_.insert_or_replace(key, value);
     }
 };
 
