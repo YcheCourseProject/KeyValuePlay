@@ -62,8 +62,9 @@ public:
 
 class Answer {
 private:
-    yche_string_string_map<100000> yche_map_;
+    yche_string_string_map<90000> yche_map_;
     fstream output_file_stream_;
+    size_t count{0};
 
     inline pair<string, string> split(const string &str) {
         auto iter_begin = str.begin();
@@ -77,7 +78,6 @@ private:
 public: //put和get方法要求public
     Answer() {
         ifstream input_file_stream{FILE_NAME, ifstream::in};
-
         if (input_file_stream.is_open()) {
             input_file_stream.seekg(0, ios::end);
             size_t buffer_size = input_file_stream.tellg();
@@ -95,6 +95,7 @@ public: //put和get方法要求public
                     yche_map_.insert_or_replace(my_pair.first, my_pair.second);
                 }
             }
+//            count = yche_map_.size();
             delete[](file_content);
         } else {
             input_file_stream.close();
@@ -109,13 +110,18 @@ public: //put和get方法要求public
             return "NULL"; //文件不存在，说明该Key不存在，返回NULL
         }
         else {
+
             return *result;
         }
     }
 
     inline void put(string key, string value) { //存储KV
+        ++count;
         output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
         if (yche_map_.find(key) == nullptr) {
+            output_file_stream_ << flush;
+        }
+        else if (count % 500 == 0) {
             output_file_stream_ << flush;
         }
         yche_map_.insert_or_replace(key, value);
