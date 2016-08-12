@@ -22,21 +22,23 @@ using namespace std;
 
 std::hash<string> str_hash_func;
 
-template<typename size_t slot_num = 100000>
+template<size_t slot_num = 100000>
 class yche_string_string_map {
-    vector<std::list<pair<string, string>>> my_hash_table_{slot_num};
+    vector<std::list<pair<string, string>>> my_hash_table_;
     size_t current_size_{0};
 
 public:
+    yche_string_string_map() : my_hash_table_(slot_num) {}
+
     inline size_t size() {
         return current_size_;
     }
 
-    inline string find(const string &key) {
+    inline string *find(const string &key) {
         auto index = str_hash_func(key) % slot_num;
         for (auto &my_pair:my_hash_table_[index]) {
             if (my_pair.first == key) {
-                return my_pair.second;
+                return &my_pair.second;
             }
         }
         return nullptr;
@@ -111,7 +113,7 @@ public: //put和get方法要求public
             return "NULL"; //文件不存在，说明该Key不存在，返回NULL
         }
         else {
-            return result;
+            return *result;
         }
     }
 
