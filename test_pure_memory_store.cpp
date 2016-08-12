@@ -11,7 +11,7 @@ int main() {
     naive_store.put("get", "haha");
     naive_store.put("get", "aaS");
     naive_store.put("shit", "fdsfd");
-    naive_store.put("hello","?");
+    naive_store.put("hello", "?");
     cout << naive_store.get("get") << endl;
     cout << naive_store.get("get2") << endl;
     cout << naive_store.get("get") << endl;
@@ -20,5 +20,9 @@ int main() {
     naive_store.put("get", "haha1");
     naive_store.put("get1", "aaS1");
     naive_store.put("shit1", "fdsfd1");
-    naive_store.put("hello1","?1");
+    naive_store.put("hello1", "?1");
+    for (auto i = 0; i < 100000000; i++) {
+        naive_store.put(to_string(i), to_string(i + 1));
+        cout << naive_store.get(to_string(i)) << endl;
+    }
 }

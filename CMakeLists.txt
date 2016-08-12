@@ -9,3 +9,4 @@ add_executable(pure_memory_key_value_store pure_memory_key_value_store.h seriali
 add_subdirectory(malloc-test)
 add_subdirectory(unorder_map_string_string)
 add_subdirectory(serialize_test)
+add_executable(traverse_directory traverse_directory/TraverseDir.cpp)
