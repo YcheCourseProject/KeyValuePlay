@@ -21,10 +21,18 @@ using namespace std;
 #define SEPERATOR_END_CHAR ';'
 #define SEPERATOR_END_STRING ";"
 #define SEPERATOR_CHAR ','
+#define HASH_FUNC(x) str_hash_func_basic(x)
 
 std::hash<string> str_hash_func_basic;
 
-template<size_t slot_num = 100000>
+auto simple_hash_func = [](const string &to_hash_str) -> size_t {
+    size_t hash = 5381;
+    for (auto &my_char :to_hash_str)
+        hash = ((hash << 5) + hash) + my_char; /* hash * 33 + c */
+    return hash;
+};
+
+template<size_t slot_num = 90000>
 class yche_string_string_map {
     vector<std::list<pair<string, string>>> my_hash_table_;
     size_t current_size_{0};
@@ -37,7 +45,7 @@ public:
     }
 
     inline string *find(const string &key) {
-        auto index = str_hash_func_basic(key) % slot_num;
+        auto index = HASH_FUNC(key) % slot_num;
         for (auto &my_pair:my_hash_table_[index]) {
             if (my_pair.first == key) {
                 return &my_pair.second;
@@ -48,7 +56,7 @@ public:
 
 
     inline void insert_or_replace(const string &key, const string &value) {
-        auto index = str_hash_func_basic(key) % slot_num;
+        auto index = HASH_FUNC(key) % slot_num;
         for (auto &my_pair:my_hash_table_[index]) {
             if (my_pair.first == key) {
                 my_pair.second = value;
@@ -70,14 +78,13 @@ private:
         auto iter_begin = str.begin();
         auto iter_end = str.end();
         auto iter_middle = find(iter_begin, iter_end, ',');
-
         return std::move(make_pair(std::move(string(iter_begin, iter_middle)),
                                    std::move(string(iter_middle + 1, iter_end - 1))));
     }
 
 public: //put和get方法要求public
     Answer() {
-        ifstream input_file_stream{FILE_NAME, ifstream::in};
+        ifstream input_file_stream{FILE_NAME, ifstream::in | ifstream::binary};
         if (input_file_stream.is_open()) {
             input_file_stream.seekg(0, ios::end);
             size_t buffer_size = input_file_stream.tellg();
@@ -95,13 +102,11 @@ public: //put和get方法要求public
                     yche_map_.insert_or_replace(my_pair.first, my_pair.second);
                 }
             }
-//            count = yche_map_.size();
             delete[](file_content);
         } else {
             input_file_stream.close();
         }
-
-        output_file_stream_.open(FILE_NAME, std::ofstream::out | std::ofstream::app);
+        output_file_stream_.open(FILE_NAME, std::ofstream::out | std::ofstream::app | std::ofstream::binary);
     }
 
     inline string get(string key) { //读取KV
@@ -110,7 +115,6 @@ public: //put和get方法要求public
             return "NULL"; //文件不存在，说明该Key不存在，返回NULL
         }
         else {
-
             return *result;
         }
     }
@@ -118,10 +122,10 @@ public: //put和get方法要求public
     inline void put(string key, string value) { //存储KV
         ++count;
         output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
-        if (yche_map_.find(key) == nullptr) {
+        if (yche_map_.find(key) == nullptr && count < 10000) {
             output_file_stream_ << flush;
         }
-        else if (count % 500 == 0) {
+        else if (count % 5000 == 0) {
             output_file_stream_ << flush;
         }
         yche_map_.insert_or_replace(key, value);
