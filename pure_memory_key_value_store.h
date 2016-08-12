@@ -10,6 +10,11 @@
 #include <sstream>
 #include <unordered_map>
 #include <algorithm>
+#include <functional>
+#include <list>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 using namespace std;
 
@@ -22,6 +27,13 @@ using namespace std;
 class Answer {
 private:
     unordered_map<string, string> yche_map_;
+    list <function<void(void)>> io_function_obj_list_;
+    array<thread, 1> worker_threads_;
+    mutex job_queue_mutex_;
+    condition_variable wait_cond_var_;
+    bool is_finished_computation{false};
+    bool is_io_thread_idle{false};
+
     fstream output_file_stream_;
     size_t count{0};
     bool first_time{true};
@@ -34,10 +46,31 @@ private:
                                    std::move(string(iter_middle + 1, iter_end - 1))));
     }
 
+    void Task() {
+        for (; !is_finished_computation;)
+            next_job()();
+    }
+
+    std::function<void(void)> next_job() {
+        std::function<void(void)> res;
+        std::unique_lock<std::mutex> job_lock(job_queue_mutex_);
+        for (; io_function_obj_list_.size() < 1;) {
+            wait_cond_var_.wait(job_lock);
+            is_io_thread_idle = true;
+        }
+        if (!is_finished_computation) {
+            res = io_function_obj_list_.front();
+            io_function_obj_list_.pop_front();
+        }
+        return res;
+    }
+
+
 public: //put和get方法要求public
     Answer() {
+        std::ios::sync_with_stdio(false);
         yche_map_.reserve(5000000);
-        fstream input_file_stream{FILE_NAME, ifstream::in};
+        ifstream input_file_stream{FILE_NAME, ifstream::in};
 
         if (input_file_stream.is_open()) {
             input_file_stream.seekg(0, ios::end);
@@ -50,7 +83,7 @@ public: //put和get方法要求public
             stringstream str_stream(file_content);
             string tmp_string;
             for (; str_stream.good();) {
-                getline(input_file_stream, tmp_string);
+                getline(str_stream, tmp_string);
                 if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
                     auto my_pair = std::move(split(tmp_string));
                     yche_map_[std::move(my_pair.first)] = std::move(my_pair.second);
@@ -65,6 +98,13 @@ public: //put和get方法要求public
             first_time = false;
         }
         output_file_stream_.open(FILE_NAME, std::ofstream::out | std::ofstream::app);
+        worker_threads_[0] = std::move(thread([this]() { this->Task(); }));
+    }
+
+    virtual ~Answer() {
+        is_finished_computation = true;
+        wait_cond_var_.notify_one();
+        worker_threads_[0].join();
     }
 
     inline string get(string key) { //读取KV
@@ -80,19 +120,24 @@ public: //put和get方法要求public
     inline void put(string key, string value) { //存储KV
         yche_map_[key] = value;
         ++count;
-        output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
-        if (first_time) {
-            if (yche_map_.size() < 100000) {
-                output_file_stream_ << flush;
+        io_function_obj_list_.emplace_back([key, value, this]() {
+            this->output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
+            if (this->first_time) {
+                if (this->yche_map_.size() < 100000) {
+                    output_file_stream_ << flush;
+                }
+                else {
+                    this->first_time = false;
+                    this->count = 0;
+                }
             }
-            else {
-                first_time = false;
-                count = 0;
+            else if (this->count > 5000) {
+                this->output_file_stream_ << flush;
+                this->count = 0;
             }
-        }
-        else if (count > 5000) {
-            output_file_stream_ << flush;
-            count = 0;
+        });
+        if (is_io_thread_idle == true) {
+            wait_cond_var_.notify_one();
         }
     }
 };
