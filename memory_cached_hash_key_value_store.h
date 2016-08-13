@@ -138,7 +138,8 @@ public:
         }
         else {
             fstream &input_file_stream = hash_as_name_file_streams_[get_hash_file_name(key)];
-            input_file_stream.open(to_string(get_hash_file_name(key)), ios::in | ios::out | ios::app | ios::binary);
+            if (!input_file_stream.is_open())
+                input_file_stream.open(to_string(get_hash_file_name(key)), ios::in | ios::out | ios::app | ios::binary);
             if (input_file_stream.is_open()) {
                 cout << get_hash_file_name(key) << "seek_info" << endl;
                 input_file_stream.seekg(0, ios::end);
@@ -164,6 +165,10 @@ public:
 
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
+        if (!hash_as_name_file_streams_[get_hash_file_name(key)].is_open()) {
+            hash_as_name_file_streams_[get_hash_file_name(key)].open(to_string(get_hash_file_name(key)),
+                                                                     ios::in | ios::out | ios::app | ios::binary);
+        }
         hash_as_name_file_streams_[get_hash_file_name(key)] << key << SEPERATOR_STRING << value << SEPERATOR_END_STRING
                                                             << '\n' << flush;
         string *tmp_ptr = yche_map_.find(key);
