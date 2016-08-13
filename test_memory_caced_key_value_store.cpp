@@ -22,7 +22,7 @@ int main() {
 //    advanced_store.put("get1", "aaS1");
 //    advanced_store.put("shit1", "fdsfd1");
 //    advanced_store.put("hello1", "?1");
-//    for (auto i = 0; i < 100000000; i++) {
+//    for (auto i = 0; i < 100; i++) {
 //        advanced_store.put(to_string(i), to_string(i + 1));
 //        cout << advanced_store.get(to_string(i)) << endl;
 //    }
