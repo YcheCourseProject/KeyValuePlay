@@ -10,7 +10,6 @@
 #include <sstream>
 #include <cstddef>
 #include <algorithm>
-#include <iostream>
 #include <stack>
 #include <array>
 
@@ -20,8 +19,8 @@ using namespace std;
 #define SEPERATOR_STRING ","
 #define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
-#define DB_FILE_NUM 10
-#define TUPLE_IN_MEM_THREASHOLD 40000
+#define DB_FILE_NUM 1000
+#define TUPLE_IN_MEM_THREASHOLD 4000
 
 std::hash<string> str_hash_func_basic;
 
@@ -90,7 +89,7 @@ inline int get_hash_file_name(const string &to_persistent_string) {
 class Answer {
 private:
     array<fstream, DB_FILE_NUM> hash_as_name_file_streams_;
-    yche_string_string_map<60000> yche_map_;
+    yche_string_string_map<6000> yche_map_;
     size_t count{0};
 
     inline pair<string, string> split(const string &str) {
@@ -128,9 +127,10 @@ public:
             return *result;
         }
         else {
-            fstream &input_file_stream = hash_as_name_file_streams_[get_hash_file_name(key)];
+            auto file_hash_index = get_hash_file_name(key);
+            fstream &input_file_stream = hash_as_name_file_streams_[file_hash_index];
             if (!input_file_stream.is_open())
-                input_file_stream.open(to_string(get_hash_file_name(key)), ios::in | ios::out | ios::app | ios::binary);
+                input_file_stream.open(to_string(file_hash_index), ios::in | ios::out | ios::app | ios::binary);
             if (input_file_stream.is_open()) {
                 input_file_stream.seekg(0, ios::end);
                 size_t buffer_size = input_file_stream.tellg();
@@ -156,12 +156,14 @@ public:
 
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
-        if (!hash_as_name_file_streams_[get_hash_file_name(key)].is_open()) {
-            hash_as_name_file_streams_[get_hash_file_name(key)].open(to_string(get_hash_file_name(key)),
-                                                                     ios::in | ios::out | ios::app | ios::binary);
+        auto file_hash_index = get_hash_file_name(key);
+        auto &output_stream = hash_as_name_file_streams_[file_hash_index];
+        if (!output_stream.is_open()) {
+            output_stream.open(to_string(file_hash_index),
+                               ios::in | ios::out | ios::app | ios::binary);
         }
-        hash_as_name_file_streams_[get_hash_file_name(key)] << key << SEPERATOR_STRING << value << SEPERATOR_END_STRING
-                                                            << '\n' << flush;
+        output_stream << key << SEPERATOR_STRING << value << SEPERATOR_END_STRING
+                      << '\n' << flush;
         string *tmp_ptr = yche_map_.find(key);
         if (tmp_ptr != nullptr)
             yche_map_.insert_or_replace(key, value);

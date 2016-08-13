@@ -3,6 +3,7 @@
 //
 
 #include "memory_cached_hash_key_value_store.h"
+#include <iostream>
 
 void simple_test() {
     Answer advanced_store;
