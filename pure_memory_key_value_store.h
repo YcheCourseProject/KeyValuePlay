@@ -72,7 +72,7 @@ public:
 
 class Answer {
 private:
-    yche_string_string_map<50000> yche_map_;
+    yche_string_string_map<40000> yche_map_;
     fstream output_file_stream_;
     size_t count{0};
 
@@ -124,7 +124,11 @@ public: //put和get方法要求public
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
         output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
-        if (yche_map_.find(key) == nullptr && count < 10000) {
+        string *tmp_ptr = yche_map_.find(key);
+        if (tmp_ptr == nullptr && count < 1000 && count % 3 != 0) {
+            output_file_stream_ << flush;
+        }
+        else if (tmp_ptr == nullptr && count % 2 != 0) {
             output_file_stream_ << flush;
         }
         else if (count % 5000 == 0) {
