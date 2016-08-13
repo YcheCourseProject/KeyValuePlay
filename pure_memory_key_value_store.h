@@ -9,53 +9,24 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-#include <list>
 #include <cstddef>
 #include <functional>
-#include <unordered_set>
 #include <iostream>
 
 using namespace std;
 
 #define FILE_NAME "tuple_transaction.db"
-#define SEPERATOR ","
-#define SEPERATOR_END_CHAR ';'
+#define SEPERATOR_STRING ","
 #define SEPERATOR_END_STRING ";"
-#define SEPERATOR_CHAR ','
 #define HASH_FUNC(x) str_hash_func_basic(x)
 
 std::hash<string> str_hash_func_basic;
 
-auto simple_hash_func = [](const string &to_hash_str) -> size_t {
-    size_t hash = 5381;
-    for (auto &my_char :to_hash_str)
-        hash = ((hash << 5) + hash) + my_char; /* hash * 33 + c */
-    return hash;
-};
-
 template<size_t slot_num = 90000>
 class yche_string_string_map {
-public:
     vector<pair<string, string>> my_hash_table_;
     size_t current_size_{0};
     size_t slot_max_size_{slot_num};
-
-    yche_string_string_map() : my_hash_table_(slot_num) {}
-
-    inline size_t size() {
-        return current_size_;
-    }
-
-    inline string *find(const string &key) {
-        auto index = HASH_FUNC(key) % slot_max_size_;
-        //linear probing
-        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                return &my_hash_table_[index].second;
-            }
-        }
-        return nullptr;
-    }
 
     inline void rebuild() {
         vector<pair<string, string>> my_hash_table_building;
@@ -74,6 +45,25 @@ public:
         my_hash_table_ = std::move(my_hash_table_building);
     }
 
+
+public:
+    yche_string_string_map() : my_hash_table_(slot_num) {}
+
+    inline size_t size() {
+        return current_size_;
+    }
+
+    inline string *find(const string &key) {
+        auto index = HASH_FUNC(key) % slot_max_size_;
+        //linear probing
+        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+            if (my_hash_table_[index].first == key) {
+                return &my_hash_table_[index].second;
+            }
+        }
+        return nullptr;
+    }
+
     inline void insert_or_replace(const string &key, const string &value) {
         auto index = HASH_FUNC(key) % slot_max_size_;
         for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
@@ -85,7 +75,7 @@ public:
         ++current_size_;
         my_hash_table_[index].first = key;
         my_hash_table_[index].second = value;
-        if (current_size_ / slot_max_size_ > 0.7) {
+        if (current_size_ / slot_max_size_ > 0.8) {
             rebuild();
         }
     }
@@ -93,7 +83,7 @@ public:
 
 class Answer {
 private:
-    yche_string_string_map<90000> yche_map_;
+    yche_string_string_map<50000> yche_map_;
     fstream output_file_stream_;
     size_t count{0};
 
@@ -105,7 +95,7 @@ private:
                          string(iter_middle + 1, iter_end - 1));
     }
 
-public: //put和get方法要求public
+public:
     Answer() {
         ifstream input_file_stream{FILE_NAME, ifstream::in | ifstream::binary};
         if (input_file_stream.is_open()) {
@@ -144,7 +134,7 @@ public: //put和get方法要求public
 
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
-        output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
+        output_file_stream_ << key << SEPERATOR_STRING << value << SEPERATOR_END_STRING << '\n';
         string *tmp_ptr = yche_map_.find(key);
 
         if (tmp_ptr == nullptr && (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7)) {
