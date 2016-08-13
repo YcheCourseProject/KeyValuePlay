@@ -81,8 +81,8 @@ private:
         auto iter_begin = str.begin();
         auto iter_end = str.end();
         auto iter_middle = find(iter_begin, iter_end, ',');
-        return std::move(make_pair(std::move(string(iter_begin, iter_middle)),
-                                   std::move(string(iter_middle + 1, iter_end - 1))));
+        return make_pair(string(iter_begin, iter_middle),
+                         string(iter_middle + 1, iter_end - 1));
     }
 
 public: //put和get方法要求public
@@ -101,7 +101,7 @@ public: //put和get方法要求public
             for (; str_stream.good();) {
                 getline(str_stream, tmp_string);
                 if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
-                    auto my_pair = std::move(split(tmp_string));
+                    auto my_pair = split(tmp_string);
                     yche_map_.insert_or_replace(my_pair.first, my_pair.second);
                 }
             }
