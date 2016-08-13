@@ -20,7 +20,7 @@ using namespace std;
 #define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
 #define DB_FILE_NUM 1000
-#define TUPLE_IN_MEM_THREASHOLD 4000
+#define TUPLE_IN_MEM_THRESHOLD 4000
 
 std::hash<string> str_hash_func_basic;
 
@@ -113,7 +113,7 @@ public:
                         auto my_pair = split(tmp_string);
                         yche_map_.insert_or_replace(my_pair.first, my_pair.second);
                         count++;
-                        if (yche_map_.size() > TUPLE_IN_MEM_THREASHOLD - 1)
+                        if (yche_map_.size() > TUPLE_IN_MEM_THRESHOLD - 1)
                             break;
                     }
                 }
@@ -167,7 +167,7 @@ public:
         string *tmp_ptr = yche_map_.find(key);
         if (tmp_ptr != nullptr)
             yche_map_.insert_or_replace(key, value);
-        else if (yche_map_.size() < TUPLE_IN_MEM_THREASHOLD) {
+        else if (yche_map_.size() < TUPLE_IN_MEM_THRESHOLD) {
             yche_map_.insert_or_replace(key, value);
         }
     }

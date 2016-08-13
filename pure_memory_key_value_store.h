@@ -115,11 +115,11 @@ public:
 
     inline string get(string &&key) { //读取KV
         auto result = yche_map_.find(key);
-        if (result == nullptr) {
-            return "NULL"; //文件不存在，说明该Key不存在，返回NULL
+        if (result != nullptr) {
+            return *result;
         }
         else {
-            return *result;
+            return "NULL"; //文件不存在，说明该Key不存在，返回NULL
         }
     }
 
