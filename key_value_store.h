@@ -19,8 +19,8 @@ using namespace std;
 #define SEPERATOR_STRING ","
 #define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
-#define DB_FILE_NUM 1000
-#define TUPLE_IN_MEM_THRESHOLD 40000
+#define DB_FILE_NUM 10
+#define TUPLE_IN_MEM_THRESHOLD 1
 
 std::hash<string> str_hash_func_basic;
 
@@ -88,7 +88,7 @@ inline int get_hash_file_name(const string &to_persistent_string) {
 
 class Answer {
 private:
-    yche_string_string_map<40000> yche_map_;
+    yche_string_string_map<1> yche_map_;
     size_t count{0};
 
     inline pair<string, string> split(const string &str) {
@@ -103,21 +103,18 @@ public:
     Answer() {
         for (auto i = 0; i < DB_FILE_NUM; ++i) {
             fstream input_stream;
-            input_stream.open(to_string(i), ios::in | ios::out | ios::app | ios::binary);
+            input_stream.open(to_string(i), ios::in | ios::binary);
             fstream &input_file_stream = input_stream;
             if (input_file_stream.is_open()) {
                 string tmp_string;
-                for (; input_file_stream.good();) {
+                for (; input_file_stream.good() && yche_map_.size() < TUPLE_IN_MEM_THRESHOLD;) {
                     getline(input_file_stream, tmp_string);
                     if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
                         auto my_pair = split(tmp_string);
                         yche_map_.insert_or_replace(my_pair.first, my_pair.second);
-                        count++;
                     }
                 }
             }
-            if (yche_map_.size() > TUPLE_IN_MEM_THRESHOLD - 1)
-                break;
         }
     }
 
@@ -126,38 +123,28 @@ public:
         if (result != nullptr) {
             return *result;
         }
+        else if (yche_map_.size() < TUPLE_IN_MEM_THRESHOLD) {
+            return "NULL";
+        }
         else {
             auto file_hash_index = get_hash_file_name(key);
-            fstream input_stream(to_string(file_hash_index), ios::in | ios::out | ios::app | ios::binary);
+            fstream input_stream(to_string(file_hash_index), ios::in | ios::binary);
             fstream &input_file_stream = input_stream;
             if (input_file_stream.is_open()) {
-                input_file_stream.seekg(0, ios::end);
-                size_t buffer_size = input_file_stream.tellg();
-                input_file_stream.seekg(0, std::ios::beg);
-                char *file_content = new char[buffer_size];
-                input_file_stream.read(file_content, buffer_size);
-                stringstream str_stream;
-                str_stream << file_content;
-
-                stack<string> tmp_string_vec;
                 string tmp_string;
-                for (; str_stream.good();) {
-                    getline(str_stream, tmp_string);
-                    tmp_string_vec.push(std::move(tmp_string));
-                }
-
-                for (; !tmp_string_vec.empty();) {
-                    auto &my_tmp = tmp_string_vec.top();
-                    if (my_tmp.size() > 0 && my_tmp.substr(my_tmp.size() - 1) == SEPERATOR_END_STRING) {
-                        pair<string, string> tmp_pair = split(my_tmp);
-                        tmp_string_vec.pop();
-                        if (tmp_pair.first == key) {
-                            return tmp_pair.second;
+                string *result_ptr = nullptr;
+                for (; input_file_stream.good();) {
+                    getline(input_file_stream, tmp_string);
+                    if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
+                        auto my_pair = split(tmp_string);
+                        if (my_pair.first == key) {
+                            result_ptr = &my_pair.second;
                         }
                     }
-
                 }
-                delete[](file_content);
+                if (result_ptr != nullptr) {
+                    return *result_ptr;
+                }
             }
             return "NULL"; //文件不存在，说明该Key不存在，返回NULL
         }
