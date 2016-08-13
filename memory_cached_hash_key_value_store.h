@@ -8,9 +8,8 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <algorithm>
 #include <cstddef>
-#include <functional>
+#include <algorithm>
 #include <iostream>
 #include <stack>
 
@@ -20,7 +19,7 @@ using namespace std;
 #define SEPERATOR_STRING ","
 #define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
-#define DB_FILE_NUM 10000
+#define DB_FILE_NUM 10
 #define TUPLE_IN_MEM_THREASH_HOLD 40000
 
 std::hash<string> str_hash_func_basic;
@@ -139,7 +138,9 @@ public:
         }
         else {
             fstream &input_file_stream = hash_as_name_file_streams_[get_hash_file_name(key)];
+            input_file_stream.open(to_string(get_hash_file_name(key)), ios::in | ios::out | ios::app | ios::binary);
             if (input_file_stream.is_open()) {
+                cout << get_hash_file_name(key) << "seek_info" << endl;
                 input_file_stream.seekg(0, ios::end);
                 size_t buffer_size = input_file_stream.tellg();
                 input_file_stream.seekg(0, std::ios::beg);
