@@ -97,7 +97,7 @@ private:
 
 public:
     Answer() {
-        ifstream input_file_stream{FILE_NAME, ifstream::in | ifstream::binary};
+        ifstream input_file_stream{FILE_NAME, ios::in | ios::binary};
         if (input_file_stream.is_open()) {
             string tmp_string;
             for (; input_file_stream.good();) {
@@ -110,7 +110,7 @@ public:
         } else {
             input_file_stream.close();
         }
-        output_file_stream_.open(FILE_NAME, std::ofstream::out | std::ofstream::app | std::ofstream::binary);
+        output_file_stream_.open(FILE_NAME, std::ios::out | std::ios::app | std::ios::binary);
     }
 
     inline string get(string &&key) { //读取KV
