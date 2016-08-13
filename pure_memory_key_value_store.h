@@ -34,7 +34,7 @@ auto simple_hash_func = [](const string &to_hash_str) -> size_t {
 
 template<size_t slot_num = 90000>
 class yche_string_string_map {
-    vector<std::list<pair<string, string>>> my_hash_table_;
+    vector<pair<string, string>> my_hash_table_;
     size_t current_size_{0};
 
 public:
@@ -46,9 +46,10 @@ public:
 
     inline string *find(const string &key) {
         auto index = HASH_FUNC(key) % slot_num;
-        for (auto &my_pair:my_hash_table_[index]) {
-            if (my_pair.first == key) {
-                return &my_pair.second;
+        //linear probing
+        for (; my_hash_table_[index].first.size() != 0; ++index) {
+            if (my_hash_table_[index].first == key) {
+                return &my_hash_table_[index].second;
             }
         }
         return nullptr;
@@ -57,20 +58,21 @@ public:
 
     inline void insert_or_replace(const string &key, const string &value) {
         auto index = HASH_FUNC(key) % slot_num;
-        for (auto &my_pair:my_hash_table_[index]) {
-            if (my_pair.first == key) {
-                my_pair.second = value;
+        for (; my_hash_table_[index].first.size() != 0; ++index) {
+            if (my_hash_table_[index].first == key) {
+                my_hash_table_[index].second = value;
                 return;
             }
         }
-        my_hash_table_[index].push_back(make_pair(key, value));
         ++current_size_;
+        my_hash_table_[index].first = key;
+        my_hash_table_[index].second = value;
     }
 };
 
 class Answer {
 private:
-    yche_string_string_map<90000> yche_map_;
+    yche_string_string_map<50000> yche_map_;
     fstream output_file_stream_;
     size_t count{0};
 
@@ -109,7 +111,7 @@ public: //put和get方法要求public
         output_file_stream_.open(FILE_NAME, std::ofstream::out | std::ofstream::app | std::ofstream::binary);
     }
 
-    inline string get(string key) { //读取KV
+    inline string get(string &&key) { //读取KV
         auto result = yche_map_.find(key);
         if (result == nullptr) {
             return "NULL"; //文件不存在，说明该Key不存在，返回NULL
@@ -119,7 +121,7 @@ public: //put和get方法要求public
         }
     }
 
-    inline void put(string key, string value) { //存储KV
+    inline void put(string &&key, string &&value) { //存储KV
         ++count;
         output_file_stream_ << key << SEPERATOR << value << SEPERATOR_END_CHAR << '\n';
         if (yche_map_.find(key) == nullptr && count < 10000) {
