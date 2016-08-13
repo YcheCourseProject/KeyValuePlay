@@ -35,10 +35,11 @@ auto simple_hash_func = [](const string &to_hash_str) -> size_t {
 
 template<size_t slot_num = 90000>
 class yche_string_string_map {
+public:
     vector<pair<string, string>> my_hash_table_;
     size_t current_size_{0};
+    size_t slot_max_size_{slot_num};
 
-public:
     yche_string_string_map() : my_hash_table_(slot_num) {}
 
     inline size_t size() {
@@ -46,9 +47,9 @@ public:
     }
 
     inline string *find(const string &key) {
-        auto index = HASH_FUNC(key) % slot_num;
+        auto index = HASH_FUNC(key) % slot_max_size_;
         //linear probing
-        for (; my_hash_table_[index].first.size() != 0; ++index) {
+        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
                 return &my_hash_table_[index].second;
             }
@@ -56,10 +57,26 @@ public:
         return nullptr;
     }
 
+    inline void rebuild() {
+        vector<pair<string, string>> my_hash_table_building;
+        slot_max_size_ *= 2;
+        my_hash_table_building.resize(slot_max_size_);
+        for (auto previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
+            if (my_hash_table_[previous_index].first.size() > 0) {
+                auto new_index = HASH_FUNC(my_hash_table_[previous_index].first) % slot_max_size_;
+                for (; my_hash_table_building[new_index].first.size() != 0;
+                       new_index = (++new_index) % slot_max_size_) {
+                }
+                my_hash_table_building[new_index] = std::move(my_hash_table_[previous_index]);
+            }
+
+        }
+        my_hash_table_ = std::move(my_hash_table_building);
+    }
 
     inline void insert_or_replace(const string &key, const string &value) {
-        auto index = HASH_FUNC(key) % slot_num;
-        for (; my_hash_table_[index].first.size() != 0; ++index) {
+        auto index = HASH_FUNC(key) % slot_max_size_;
+        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
                 my_hash_table_[index].second = value;
                 return;
@@ -68,6 +85,9 @@ public:
         ++current_size_;
         my_hash_table_[index].first = key;
         my_hash_table_[index].second = value;
+        if (current_size_ / slot_max_size_ > 0.7) {
+            rebuild();
+        }
     }
 };
 
