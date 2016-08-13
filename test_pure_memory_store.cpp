@@ -22,10 +22,13 @@ int main() {
     naive_store.put("get1", "aaS1");
     naive_store.put("shit1", "fdsfd1");
     naive_store.put("hello1", "?1");
-//    for (auto i = 0; i < 100000000; i++) {
-//        naive_store.put(to_string(i), to_string(i + 1));
-//        cout << naive_store.get(to_string(i)) << endl;
-//    }
+    for (auto i = 0; i < 1000; i++) {
+        naive_store.put(to_string(i), to_string(i + 1));
+        cout << naive_store.get(to_string(i)) << endl;
+    }
+    for (auto i = 0; i < 1005; i++) {
+        cout << naive_store.get(to_string(i)) << endl;
+    }
 //    cout << "Hi" << endl;
 //    yche_string_string_map<4> hello_map;
 //    for (auto i = 0; i < 3; i++) {

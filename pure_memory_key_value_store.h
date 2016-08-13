@@ -99,23 +99,14 @@ public:
     Answer() {
         ifstream input_file_stream{FILE_NAME, ifstream::in | ifstream::binary};
         if (input_file_stream.is_open()) {
-            input_file_stream.seekg(0, ios::end);
-            size_t buffer_size = input_file_stream.tellg();
-            input_file_stream.seekg(0, std::ios::beg);
-            char *file_content = new char[buffer_size];
-            input_file_stream.read(file_content, buffer_size);
-            input_file_stream.close();
-
-            stringstream str_stream(file_content);
             string tmp_string;
-            for (; str_stream.good();) {
-                getline(str_stream, tmp_string);
+            for (; input_file_stream.good();) {
+                getline(input_file_stream, tmp_string);
                 if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
                     auto my_pair = split(tmp_string);
                     yche_map_.insert_or_replace(my_pair.first, my_pair.second);
                 }
             }
-            delete[](file_content);
         } else {
             input_file_stream.close();
         }
@@ -136,7 +127,6 @@ public:
         ++count;
         output_file_stream_ << key << SEPERATOR_STRING << value << SEPERATOR_END_STRING << '\n';
         string *tmp_ptr = yche_map_.find(key);
-
         if (tmp_ptr == nullptr && (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7)) {
             output_file_stream_ << flush;
         }

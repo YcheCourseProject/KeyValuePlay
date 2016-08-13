@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iostream>
 #include <stack>
+#include <array>
 
 using namespace std;
 
@@ -20,7 +21,7 @@ using namespace std;
 #define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
 #define DB_FILE_NUM 10
-#define TUPLE_IN_MEM_THREASH_HOLD 40000
+#define TUPLE_IN_MEM_THREASHOLD 40000
 
 std::hash<string> str_hash_func_basic;
 
@@ -46,7 +47,6 @@ class yche_string_string_map {
         }
         my_hash_table_ = std::move(my_hash_table_building);
     }
-
 
 public:
     yche_string_string_map() : my_hash_table_(slot_num) {}
@@ -89,8 +89,8 @@ inline int get_hash_file_name(const string &to_persistent_string) {
 
 class Answer {
 private:
-    vector<fstream> hash_as_name_file_streams_;
-    yche_string_string_map<50000> yche_map_;
+    array<fstream, DB_FILE_NUM> hash_as_name_file_streams_;
+    yche_string_string_map<60000> yche_map_;
     size_t count{0};
 
     inline pair<string, string> split(const string &str) {
@@ -103,30 +103,21 @@ private:
 
 public:
     Answer() {
-        hash_as_name_file_streams_.resize(DB_FILE_NUM);
         for (auto i = 0; i < DB_FILE_NUM; ++i) {
             hash_as_name_file_streams_[i].open(to_string(i), ios::in | ios::out | ios::app | ios::binary);
             fstream &input_file_stream = hash_as_name_file_streams_[i];
             if (input_file_stream.is_open()) {
-                input_file_stream.seekg(0, ios::end);
-                size_t buffer_size = input_file_stream.tellg();
-                input_file_stream.seekg(0, std::ios::beg);
-                char *file_content = new char[buffer_size];
-                input_file_stream.read(file_content, buffer_size);
-                stringstream str_stream(file_content);
-
                 string tmp_string;
-                for (; str_stream.good();) {
-                    getline(str_stream, tmp_string);
+                for (; input_file_stream.good();) {
+                    getline(input_file_stream, tmp_string);
                     if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
                         auto my_pair = split(tmp_string);
                         yche_map_.insert_or_replace(my_pair.first, my_pair.second);
                         count++;
-                        if (yche_map_.size() > TUPLE_IN_MEM_THREASH_HOLD - 1)
+                        if (yche_map_.size() > TUPLE_IN_MEM_THREASHOLD - 1)
                             break;
                     }
                 }
-                delete[](file_content);
             }
         }
     }
@@ -141,13 +132,13 @@ public:
             if (!input_file_stream.is_open())
                 input_file_stream.open(to_string(get_hash_file_name(key)), ios::in | ios::out | ios::app | ios::binary);
             if (input_file_stream.is_open()) {
-                cout << get_hash_file_name(key) << "seek_info" << endl;
                 input_file_stream.seekg(0, ios::end);
                 size_t buffer_size = input_file_stream.tellg();
                 input_file_stream.seekg(0, std::ios::beg);
                 char *file_content = new char[buffer_size];
                 input_file_stream.read(file_content, buffer_size);
-                stringstream str_stream(file_content);
+                stringstream str_stream;
+                str_stream << file_content;
 
                 stack<string> tmp_string_vec;
                 for (; !tmp_string_vec.empty();) {
@@ -174,7 +165,7 @@ public:
         string *tmp_ptr = yche_map_.find(key);
         if (tmp_ptr != nullptr)
             yche_map_.insert_or_replace(key, value);
-        else if (yche_map_.size() < TUPLE_IN_MEM_THREASH_HOLD) {
+        else if (yche_map_.size() < TUPLE_IN_MEM_THREASHOLD) {
             yche_map_.insert_or_replace(key, value);
         }
     }
