@@ -9,7 +9,7 @@
 
 #define FLAG_ALIGNMENT 1
 #define KEY_ALIGNMENT 10
-#define VALUE_ALIGNMENT 10
+#define VALUE_ALIGNMENT 20
 #define YCHE_FILE "hello_fstream.txt"
 
 using namespace std;
@@ -17,8 +17,8 @@ using namespace std;
 int main() {
     string s1 = "123";
     fstream fstream1(YCHE_FILE, ios::in | ios::out | ios::app);
-    fstream1 << s1 << setw(KEY_ALIGNMENT) << "34234" << setw(VALUE_ALIGNMENT) << "\n";
-    fstream1 << s1 << setw(KEY_ALIGNMENT) << "432" << setw(VALUE_ALIGNMENT) << "\n";
+    fstream1 << "1:" << left << setw(KEY_ALIGNMENT) << s1 << left << setw(KEY_ALIGNMENT) << "34234" << ";\n";
+    fstream1 << "2:" << left << setw(KEY_ALIGNMENT) << s1 << left << setw(KEY_ALIGNMENT) << "321321" << ";\n";
 
     fstream1.seekg(0, ios::beg);
     string tmp_string;
