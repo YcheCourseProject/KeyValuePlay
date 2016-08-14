@@ -17,7 +17,6 @@ using namespace std;
 
 #define FILE_NAME "tuple_transaction.db"
 #define SEPERATOR_STRING ","
-#define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
 
 std::hash<string> str_hash_func_basic;
@@ -92,7 +91,7 @@ private:
         auto iter_end = str.end();
         auto iter_middle = find(iter_begin, iter_end, ',');
         return make_pair(string(iter_begin, iter_middle),
-                         string(iter_middle + 1, iter_end - 1));
+                         string(iter_middle + 1, iter_end));
     }
 
 public:
@@ -102,7 +101,7 @@ public:
             string tmp_string;
             for (; input_file_stream.good();) {
                 getline(input_file_stream, tmp_string);
-                if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
+                if (tmp_string.size() > 0) {
                     auto my_pair = split(tmp_string);
                     yche_map_.insert_or_replace(my_pair.first, my_pair.second);
                 }
@@ -125,7 +124,7 @@ public:
 
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
-        output_file_stream_ << key << SEPERATOR_STRING << value << SEPERATOR_END_STRING << '\n';
+        output_file_stream_ << key << SEPERATOR_STRING << value << '\n';
         string *tmp_ptr = yche_map_.find(key);
         if (tmp_ptr == nullptr && (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7)) {
             output_file_stream_ << flush;
