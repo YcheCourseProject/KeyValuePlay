@@ -14,12 +14,10 @@
 
 using namespace std;
 
-int main() {
+void output_study() {
+    fstream fstream1(YCHE_FILE, ios::in | ios::out | ios::app | ios::binary);
     string s1 = "123";
-    fstream fstream1(YCHE_FILE, ios::in | ios::out | ios::app);
-    fstream1 << "1:" << left << setw(KEY_ALIGNMENT) << s1 << left << setw(KEY_ALIGNMENT) << "34234" << ";\n";
-    fstream1 << "2:" << left << setw(KEY_ALIGNMENT) << s1 << left << setw(KEY_ALIGNMENT) << "321321" << ";\n";
-
+    fstream1 << "1" << left << setw(KEY_ALIGNMENT) << s1 << left << setw(KEY_ALIGNMENT) << "34234";
     fstream1.seekg(0, ios::beg);
     string tmp_string;
     for (; !fstream1.eof();) {
@@ -27,4 +25,52 @@ int main() {
         cout << tmp_string << endl;
     }
 }
+
+
+void input_study() {
+    fstream fstream1(YCHE_FILE, ios::in | ios::out | ios::app | ios::binary);
+    fstream1.seekg(0, ios::end);
+    int length = fstream1.tellg();
+    cout << length << "!" << endl;
+    fstream1.seekg(0, ios::beg);
+
+    constexpr int alignmnet_size = 21;
+    char my_char[21];
+
+    for (auto i = 0; i < length / alignmnet_size; i++) {
+        fstream1.seekg(i * alignmnet_size, ios::beg);
+        fstream1.read(my_char, alignmnet_size);
+        string tmp(my_char, 1);
+        string tmp2(my_char, 2, 12);
+        string tmp3(my_char, 12, 22);
+        cout << tmp << "," << tmp2 << "," << tmp3 << endl;
+    }
+}
+
+void write_frog_study() {
+    fstream my_stream("frog_write", ios::in | ios::out | ios::app | ios::binary);
+    my_stream.seekp(0, ios::beg);
+    for (auto i = 0; i < 10; i++) {
+        my_stream << left << setw(KEY_ALIGNMENT) << i * i << ";\n";
+    }
+}
+
+void write_meta_and_read() {
+    fstream my_meta_stream("yche.txt", ios::in | ios::out | ios::app);
+    my_meta_stream.seekp(0, ios::beg);
+    my_meta_stream << left << setw(10) << "small \n" << flush;
+    my_meta_stream.seekg(0, ios::beg);
+    string tmp_string;
+    my_meta_stream >> tmp_string;
+    cout << tmp_string;
+    cout << "!" << endl;
+}
+
+int main() {
+//    output_study();
+//    input_study();
+//    write_frog_study();
+    write_meta_and_read();
+}
+
 
