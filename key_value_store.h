@@ -16,7 +16,7 @@ using namespace std;
 #define SEPERATOR_STRING ","
 #define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
-#define DB_FILE_NUM 100
+#define DB_FILE_NUM 1000
 
 std::hash<string> str_hash_func_basic;
 
@@ -48,7 +48,8 @@ public:
         if (input_file_stream.is_open()) {
             for (; input_file_stream.good();) {
                 getline(input_file_stream, tmp_string);
-                if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
+                if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING
+                        && find(tmp_string.begin(),tmp_string.end(),',')!=tmp_string.end()) {
                     my_pair = split(tmp_string);
                     if (my_pair.first == key) {
                         result_ptr = &my_pair.second;
