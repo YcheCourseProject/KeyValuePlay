@@ -24,39 +24,44 @@ inline size_t get_hash_file_name(const string &to_persistent_string) {
     return HASH_FUNC(to_persistent_string) % DB_FILE_NUM;
 }
 
-class Answer {
-private:
-    inline pair<string, string> split(const string &str) {
-        auto iter_begin = str.begin();
-        auto iter_end = str.end();
-        auto iter_middle = find(iter_begin, iter_end, ',');
-        return make_pair(string(iter_begin, iter_middle),
-                         string(iter_middle + 1, iter_end - 1));
-    }
+inline void trim_right_blank(string &to_trim_string) {
+    auto iter_back = std::find_if_not(to_trim_string.rbegin(), to_trim_string.rend(),
+                                      [](int c) { return std::isspace(c); }).base();
+    to_trim_string = std::string(to_trim_string.begin(), iter_back);
+}
 
+inline pair<string, string> split(const string &str) {
+    auto iter_begin = str.begin();
+    auto iter_end = str.end();
+    auto iter_middle = find(iter_begin, iter_end, ',');
+    return make_pair(string(iter_begin, iter_middle),
+                     string(iter_middle + 1, iter_end));
+}
+
+class Answer {
 public:
     Answer() {
     }
 
     inline string get(string &&key) { //读取KV
         size_t file_hash_index = get_hash_file_name(key);
-        ifstream input_file_stream(to_string(file_hash_index));
+        fstream input_file_stream(to_string(file_hash_index), ios::in | ios::binary);
 
+        input_file_stream.seekg(0, ios::beg);
         string tmp_string;
         string *result_ptr = nullptr;
         pair<string, string> my_pair;
         for (; input_file_stream.good();) {
             getline(input_file_stream, tmp_string);
-            if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING
-                && find(tmp_string.begin(), tmp_string.end(), ',') != tmp_string.end()) {
+            if (tmp_string.size() > 0) {
                 my_pair = split(tmp_string);
+                my_pair.second = my_pair.second.substr(0, my_pair.second.size() - 1);
                 if (my_pair.first == key) {
                     result_ptr = &my_pair.second;
                 }
             }
-        }
-        if (result_ptr != nullptr) {
-            return *result_ptr;
+            if (result_ptr != nullptr)
+                return *result_ptr;
         }
         input_file_stream.close();
         return "NULL";
@@ -65,8 +70,8 @@ public:
     //Can be optimized with first read, remove duplicate and then write whole
     inline void put(string &&key, string &&value) { //存储KV
         size_t file_hash_index = get_hash_file_name(key);
-        ofstream output_stream(to_string(file_hash_index));
-        output_stream << key << SEPERATOR_STRING << value << SEPERATOR_END_STRING << '\n' << flush;
+        fstream output_stream(to_string(file_hash_index), ios::out | ios::app | ios::binary);
+        output_stream << key << ',' << value << '\n' << flush;
         output_stream.close();
     }
 };
