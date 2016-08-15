@@ -17,7 +17,6 @@ using namespace std;
 
 #define FILE_NAME "tuple_transaction.db"
 #define SEPERATOR_STRING ","
-#define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
 
 std::hash<string> str_hash_func_basic;
@@ -92,51 +91,41 @@ private:
         auto iter_end = str.end();
         auto iter_middle = find(iter_begin, iter_end, ',');
         return make_pair(string(iter_begin, iter_middle),
-                         string(iter_middle + 1, iter_end - 1));
+                         string(iter_middle + 1, iter_end));
     }
 
 public:
     Answer() {
-        ifstream input_file_stream{FILE_NAME, ifstream::in | ifstream::binary};
+        ifstream input_file_stream{FILE_NAME, ios::in | ios::binary};
         if (input_file_stream.is_open()) {
-            input_file_stream.seekg(0, ios::end);
-            size_t buffer_size = input_file_stream.tellg();
-            input_file_stream.seekg(0, std::ios::beg);
-            char *file_content = new char[buffer_size];
-            input_file_stream.read(file_content, buffer_size);
-            input_file_stream.close();
-
-            stringstream str_stream(file_content);
             string tmp_string;
-            for (; str_stream.good();) {
-                getline(str_stream, tmp_string);
-                if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
+            for (; input_file_stream.good();) {
+                getline(input_file_stream, tmp_string);
+                if (tmp_string.size() > 0) {
                     auto my_pair = split(tmp_string);
                     yche_map_.insert_or_replace(my_pair.first, my_pair.second);
                 }
             }
-            delete[](file_content);
         } else {
             input_file_stream.close();
         }
-        output_file_stream_.open(FILE_NAME, std::ofstream::out | std::ofstream::app | std::ofstream::binary);
+        output_file_stream_.open(FILE_NAME, std::ios::out | std::ios::app | std::ios::binary);
     }
 
     inline string get(string &&key) { //读取KV
         auto result = yche_map_.find(key);
-        if (result == nullptr) {
-            return "NULL"; //文件不存在，说明该Key不存在，返回NULL
+        if (result != nullptr) {
+            return *result;
         }
         else {
-            return *result;
+            return "NULL"; //文件不存在，说明该Key不存在，返回NULL
         }
     }
 
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
-        output_file_stream_ << key << SEPERATOR_STRING << value << SEPERATOR_END_STRING << '\n';
+        output_file_stream_ << key << SEPERATOR_STRING << value << '\n';
         string *tmp_ptr = yche_map_.find(key);
-
         if (tmp_ptr == nullptr && (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7)) {
             output_file_stream_ << flush;
         }

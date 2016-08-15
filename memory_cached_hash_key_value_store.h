@@ -8,19 +8,16 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <cstddef>
 #include <algorithm>
+#include <cstddef>
+#include <functional>
 #include <iostream>
-#include <stack>
 
 using namespace std;
 
 #define FILE_NAME "tuple_transaction.db"
 #define SEPERATOR_STRING ","
-#define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
-#define DB_FILE_NUM 10
-#define TUPLE_IN_MEM_THREASH_HOLD 40000
 
 std::hash<string> str_hash_func_basic;
 
@@ -83,14 +80,10 @@ public:
     }
 };
 
-inline int get_hash_file_name(const string &to_persistent_string) {
-    return HASH_FUNC(to_persistent_string) % DB_FILE_NUM;
-}
-
 class Answer {
 private:
-    vector<fstream> hash_as_name_file_streams_;
     yche_string_string_map<50000> yche_map_;
+    fstream output_file_stream_;
     size_t count{0};
 
     inline pair<string, string> split(const string &str) {
@@ -98,37 +91,25 @@ private:
         auto iter_end = str.end();
         auto iter_middle = find(iter_begin, iter_end, ',');
         return make_pair(string(iter_begin, iter_middle),
-                         string(iter_middle + 1, iter_end - 1));
+                         string(iter_middle + 1, iter_end));
     }
 
 public:
     Answer() {
-        hash_as_name_file_streams_.resize(DB_FILE_NUM);
-        for (auto i = 0; i < DB_FILE_NUM; ++i) {
-            hash_as_name_file_streams_[i].open(to_string(i), ios::in | ios::out | ios::app | ios::binary);
-            fstream &input_file_stream = hash_as_name_file_streams_[i];
-            if (input_file_stream.is_open()) {
-                input_file_stream.seekg(0, ios::end);
-                size_t buffer_size = input_file_stream.tellg();
-                input_file_stream.seekg(0, std::ios::beg);
-                char *file_content = new char[buffer_size];
-                input_file_stream.read(file_content, buffer_size);
-                stringstream str_stream(file_content);
-
-                string tmp_string;
-                for (; str_stream.good();) {
-                    getline(str_stream, tmp_string);
-                    if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING) {
-                        auto my_pair = split(tmp_string);
-                        yche_map_.insert_or_replace(my_pair.first, my_pair.second);
-                        count++;
-                        if (yche_map_.size() > TUPLE_IN_MEM_THREASH_HOLD - 1)
-                            break;
-                    }
+        ifstream input_file_stream{FILE_NAME, ios::in | ios::binary};
+        if (input_file_stream.is_open()) {
+            string tmp_string;
+            for (; input_file_stream.good();) {
+                getline(input_file_stream, tmp_string);
+                if (tmp_string.size() > 0) {
+                    auto my_pair = split(tmp_string);
+                    yche_map_.insert_or_replace(my_pair.first, my_pair.second);
                 }
-                delete[](file_content);
             }
+        } else {
+            input_file_stream.close();
         }
+        output_file_stream_.open(FILE_NAME, std::ios::out | std::ios::app | std::ios::binary);
     }
 
     inline string get(string &&key) { //读取KV
@@ -137,46 +118,18 @@ public:
             return *result;
         }
         else {
-            fstream &input_file_stream = hash_as_name_file_streams_[get_hash_file_name(key)];
-            if (!input_file_stream.is_open())
-                input_file_stream.open(to_string(get_hash_file_name(key)), ios::in | ios::out | ios::app | ios::binary);
-            if (input_file_stream.is_open()) {
-                cout << get_hash_file_name(key) << "seek_info" << endl;
-                input_file_stream.seekg(0, ios::end);
-                size_t buffer_size = input_file_stream.tellg();
-                input_file_stream.seekg(0, std::ios::beg);
-                char *file_content = new char[buffer_size];
-                input_file_stream.read(file_content, buffer_size);
-                stringstream str_stream(file_content);
-
-                stack<string> tmp_string_vec;
-                for (; !tmp_string_vec.empty();) {
-                    pair<string, string> tmp_pair = split(tmp_string_vec.top());
-                    tmp_string_vec.pop();
-                    if (tmp_pair.first == key) {
-                        return tmp_pair.second;
-                    }
-                }
-                delete[](file_content);
-            }
             return "NULL"; //文件不存在，说明该Key不存在，返回NULL
         }
     }
 
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
-        if (!hash_as_name_file_streams_[get_hash_file_name(key)].is_open()) {
-            hash_as_name_file_streams_[get_hash_file_name(key)].open(to_string(get_hash_file_name(key)),
-                                                                     ios::in | ios::out | ios::app | ios::binary);
-        }
-        hash_as_name_file_streams_[get_hash_file_name(key)] << key << SEPERATOR_STRING << value << SEPERATOR_END_STRING
-                                                            << '\n' << flush;
+        output_file_stream_ << key << SEPERATOR_STRING << value << '\n';
         string *tmp_ptr = yche_map_.find(key);
-        if (tmp_ptr != nullptr)
-            yche_map_.insert_or_replace(key, value);
-        else if (yche_map_.size() < TUPLE_IN_MEM_THREASH_HOLD) {
-            yche_map_.insert_or_replace(key, value);
+        if (tmp_ptr == nullptr && (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7)) {
+            output_file_stream_ << flush;
         }
+        yche_map_.insert_or_replace(key, value);
     }
 };
 
