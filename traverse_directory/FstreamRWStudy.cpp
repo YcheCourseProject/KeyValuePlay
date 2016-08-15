@@ -63,7 +63,7 @@ void write_frog_study() {
     }
 }
 
-inline void trim_alignment_blank(string &to_trim_string) {
+inline void trim_right_blank(string &to_trim_string) {
     auto wsback = std::find_if_not(to_trim_string.rbegin(), to_trim_string.rend(),
                                    [](int c) { return std::isspace(c); }).base();
     to_trim_string = std::string(to_trim_string.begin(), wsback);
@@ -81,7 +81,7 @@ void read_frog_study() {
         input_stream.read(my_line_buffer, 10);
         tmp_string = std::move(string(my_line_buffer));
         if (tmp_string.size() > 0)
-            trim_alignment_blank(tmp_string);
+            trim_right_blank(tmp_string);
         cout << "current alignment line:" << i << "," << tmp_string << ",string_size:" << tmp_string.size() << endl
              << endl;
     }
