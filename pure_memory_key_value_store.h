@@ -88,7 +88,7 @@ public:
 
 class Answer {
 private:
-    yche_string_string_map<> yche_map_;
+    yche_string_string_map<90000> yche_map_;
     fstream db_file_stream_;
     size_t count{0};
 
@@ -132,7 +132,7 @@ public:
         ++count;
         db_file_stream_ << key << SEPERATOR_STRING << value << '\n';
         string *tmp_ptr = yche_map_.find(key);
-        if (tmp_ptr == nullptr && (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7)) {
+        if (tmp_ptr == nullptr && (count % 13 == 1 || count % 13 == 3 || count % 13 == 11)) {
             db_file_stream_ << flush;
         }
         yche_map_.insert_or_replace(key, value);
