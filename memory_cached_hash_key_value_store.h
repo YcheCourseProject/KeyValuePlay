@@ -12,13 +12,14 @@
 #include <cstddef>
 #include <functional>
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
 #define HASH_FUNC(x) str_hash_func_basic(x)
-constexpr char *FILE_NAME = "tuple_transaction.db";
-constexpr char *SEPERATOR_STRING = ",";
+
 constexpr int DEFAULT_HASH_TABLE_SLOT_SIZE = 80000;
+constexpr double LOAD_FACTOR_THRESHOLD = 0.8;
 
 constexpr int EXTRA_ALIGNMENT_SIZE = 1;
 constexpr char *extra_split_string = "\n";
@@ -98,12 +99,12 @@ template<size_t slot_num = DEFAULT_HASH_TABLE_SLOT_SIZE>
 class yche_string_string_map {
 private:
     vector<pair<string, string>> my_hash_table_;
+    string value_result_string_;
     size_t current_size_{0};
     size_t slot_max_size_{slot_num};
 
     //structure for persistence
     bool is_current_in_memory_table_full_{false};
-
 
     inline void rebuild() {
         vector<pair<string, string>> my_hash_table_building;
@@ -123,22 +124,77 @@ private:
     }
 
     inline void write_key_value_to_file(const string &key, const string &value, const size_t &hash_result) {
+        auto &hash_file_slot_size = data_set_alignment_info_ptr_->hash_file_slot_size_;
+        auto &key_alignment_size = data_set_alignment_info_ptr_->key_alignment_size_;
+        auto &whole_alignment_size = data_set_alignment_info_ptr_->whole_alignment_size_;
+        auto index = hash_result % hash_file_slot_size;
+        //linear probing
+        string key_string;
+        for (;; index = (++index) % hash_file_slot_size) {
+            db_file_stream_ptr_->seekg(index * whole_alignment_size, ios::beg);
+            db_file_stream_ptr_->read(read_buffer_, key_alignment_size);
+            key_string = std::move(string(read_buffer_, 0, key_alignment_size));
+            trim_right_blank(key_string);
+            if (key_string.size() == 0 || key_string == key) {
+                db_file_stream_ptr_->seekp(index * whole_alignment_size + key_alignment_size, ios::beg);
+                *db_file_stream_ptr_ << left << setw(data_set_alignment_info_ptr_->value_alignment_size_)
+                                     << extra_split_string;
+                break;
+            }
+        }
+    }
 
+    inline string *read_file_search_key(const string &key, const size_t &hash_result) {
+        auto &hash_file_slot_size = data_set_alignment_info_ptr_->hash_file_slot_size_;
+        auto &key_alignment_size = data_set_alignment_info_ptr_->key_alignment_size_;
+        auto &whole_alignment_size = data_set_alignment_info_ptr_->whole_alignment_size_;
+        auto &value_alignment_size = data_set_alignment_info_ptr_->value_alignment_size_;
+        auto search_index = hash_result % hash_file_slot_size;
+        //linear probing
+        string key_string;
+        for (;; search_index = (++search_index) % hash_file_slot_size) {
+            db_file_stream_ptr_->seekg(search_index * whole_alignment_size, ios::beg);
+            db_file_stream_ptr_->read(read_buffer_, whole_alignment_size);
+            key_string = std::move(string(read_buffer_, 0, key_alignment_size));
+            trim_right_blank(key_string);
+            if (key_string.size() == 0) {
+                return nullptr;
+            } else if (key_string == key) {
+                value_result_string_ = std::move(string(read_buffer_, key_alignment_size, whole_alignment_size));
+                trim_right_blank(value_result_string_);
+                return &value_result_string_;
+            }
+        }
     }
 
 public:
     DataSetAlignmentInfo *data_set_alignment_info_ptr_{nullptr};
     fstream *db_file_stream_ptr_{nullptr};
-    char *read_buffer = nullptr;
+
+    char *read_buffer_{nullptr};
 
     yche_string_string_map() : my_hash_table_(slot_num) {}
 
     virtual ~yche_string_string_map() {
-        delete[]read_buffer;
+        delete[]read_buffer_;
     }
 
-    void inline read_portion_of_file_to_hash_table(char *filename) {
-
+    void inline read_portion_of_file_to_hash_table() {
+        auto &whole_alignment_size = data_set_alignment_info_ptr_->whole_alignment_size_;
+        auto &key_alignment_size = data_set_alignment_info_ptr_->key_alignment_size_;
+        string key_string;
+        string value_string;
+        for (auto index = 0; index < data_set_alignment_info_ptr_->hash_file_slot_size_ &&
+                             is_current_in_memory_table_full_ == false; index++) {
+            db_file_stream_ptr_->seekg(index * whole_alignment_size, ios::beg);
+            db_file_stream_ptr_->read(read_buffer_, whole_alignment_size);
+            key_string = std::move(string(read_buffer_, 0, key_alignment_size));
+            trim_right_blank(key_string);
+            if (key_string.size() != 0) {
+                value_string = std::move(string(read_buffer_, key_alignment_size, whole_alignment_size));
+                insert_or_replace(key_string, value_string);
+            }
+        }
     }
 
     inline size_t size() {
@@ -148,25 +204,24 @@ public:
     inline string *find(const string &key) {
         auto hash_result = HASH_FUNC(key);
         auto index = hash_result % slot_max_size_;
-        //linear probing
+        //linear probing, judge if there is a existence in memory
         for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
                 return &my_hash_table_[index].second;
             }
         }
-
         //if in-memory hash_table is full search in file, read file
-        if (is_current_in_memory_table_full_ == true) {
-            index = hash_result % data_set_alignment_info_ptr_->hash_file_slot_size_;
-            //linear probing
-
-        }
-
+        if (is_current_in_memory_table_full_ == true)
+            return read_file_search_key(key, hash_result);
         return nullptr;
     }
 
     inline void insert_or_replace(const string &key, const string &value) {
         auto hash_result = HASH_FUNC(key);
+        //write to the db file for persistence
+        write_key_value_to_file(key, value, hash_result);
+
+        //update in-memory hash table
         auto index = hash_result % slot_max_size_;
         for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
@@ -174,23 +229,16 @@ public:
                 return;
             }
         }
-
-        //not hit in memory, judge whether memory is full
+        //not hit in memory, judge whether memory is full to decide whether continuing insertion
         if (is_current_in_memory_table_full_ == false) {
             my_hash_table_[index].first = key;
             my_hash_table_[index].second = value;
-            if (current_size_ / slot_max_size_ > 0.8) {
-                if (slot_max_size_ * 2 < data_set_alignment_info_ptr_->hash_in_memory_tuple_size_)
-                    rebuild();
-                else {
-                    is_current_in_memory_table_full_ = true;
-                    write_key_value_to_file(key, value, hash_result);
-                }
-                ++current_size_;
-            }
-        } else {
-            //write to the db file
-            write_key_value_to_file(key, value, hash_result);
+            ++current_size_;
+            if (current_size_ / slot_max_size_ > LOAD_FACTOR_THRESHOLD &&
+                slot_max_size_ * 2 < data_set_alignment_info_ptr_->hash_in_memory_tuple_size_)
+                rebuild();
+            else
+                is_current_in_memory_table_full_ = true;
         }
     }
 };
@@ -200,7 +248,6 @@ private:
 
     yche_string_string_map<> yche_map_;
     bool is_file_exists_{false};
-    char *one_alignment_content_buffer_;
     fstream db_file_stream_;
     size_t count{0};
     DataSetAlignmentInfo *data_set_alignment_info_ptr_{nullptr};
@@ -218,7 +265,7 @@ private:
     void inline init_yche_hash_map() {
         yche_map_.db_file_stream_ptr_ = &db_file_stream_;
         yche_map_.data_set_alignment_info_ptr_ = data_set_alignment_info_ptr_;
-        yche_map_.read_buffer = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
+        yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
     }
 
 public:
@@ -228,18 +275,18 @@ public:
         is_file_exists_ = true;
         if (db_file_stream_.good()) {
             init_data_set_alignment_info(DataSetType::small);
-            yche_map_.read_portion_of_file_to_hash_table(SMALL_FILE_NAME);
+            yche_map_.read_portion_of_file_to_hash_table();
         } else {
             db_file_stream_.open(MEDIUM_FILE_NAME, ios::in | ios::out);
             if (db_file_stream_.good()) {
                 init_data_set_alignment_info(DataSetType::medium);
-                yche_map_.read_portion_of_file_to_hash_table(MEDIUM_FILE_NAME);
+                yche_map_.read_portion_of_file_to_hash_table();
             }
             else {
                 db_file_stream_.open(MEDIUM_FILE_NAME, ios::in | ios::out);
                 if (db_file_stream_.good()) {
                     init_data_set_alignment_info(DataSetType::large);
-                    yche_map_.read_portion_of_file_to_hash_table(LARGE_FILE_NAME);
+                    yche_map_.read_portion_of_file_to_hash_table();
                 }
                 else
                     is_file_exists_ = false;
@@ -248,7 +295,6 @@ public:
     }
 
     virtual ~Answer() {
-        delete[]one_alignment_content_buffer_;
         delete data_set_alignment_info_ptr_;
     }
 
@@ -276,7 +322,6 @@ public:
                 create_file(LARGE_FILE_NAME);
                 init_data_set_alignment_info(DataSetType::large);
             }
-
         }
         yche_map_.insert_or_replace(key, value);
         ++count;
