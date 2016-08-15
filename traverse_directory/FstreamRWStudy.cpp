@@ -48,10 +48,18 @@ void input_study() {
 }
 
 void write_frog_study() {
-    fstream my_stream("frog_write", ios::in | ios::out | ios::app | ios::binary);
-    my_stream.seekp(0, ios::beg);
+    fstream my_stream("frog_write.txt", ios::in | ios::out);
+    if (!my_stream) {
+        my_stream.open("frog_write.txt", ios::out | ios::trunc);
+        my_stream.close();
+        my_stream.open("frog_write.txt", ios::in | ios::out);
+    }
     for (auto i = 0; i < 10; i++) {
-        my_stream << left << setw(KEY_ALIGNMENT) << i * i << ";\n";
+        if (i % 2 == 1) {
+            my_stream.seekp(i * 12, ios::beg);
+            my_stream << left << setw(10) << i * i * i << ";\n";
+
+        }
     }
 }
 
@@ -69,8 +77,8 @@ void write_meta_and_read() {
 int main() {
 //    output_study();
 //    input_study();
-//    write_frog_study();
-    write_meta_and_read();
+    write_frog_study();
+//    write_meta_and_read();
 }
 
 
