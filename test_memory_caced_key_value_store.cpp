@@ -40,6 +40,6 @@ void get_test() {
 
 int main() {
 //    simple_test();
-//    basic_test();
-    get_test();
+    basic_test();
+//    get_test();
 }

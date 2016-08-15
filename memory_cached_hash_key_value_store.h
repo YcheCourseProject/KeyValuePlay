@@ -265,7 +265,6 @@ private:
     void inline init_yche_hash_map() {
         yche_map_.db_file_stream_ptr_ = &db_file_stream_;
         yche_map_.data_set_alignment_info_ptr_ = data_set_alignment_info_ptr_;
-        yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
     }
 
 public:
@@ -275,17 +274,20 @@ public:
         is_file_exists_ = true;
         if (db_file_stream_.good()) {
             init_data_set_alignment_info(DataSetType::small);
+            yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
             yche_map_.read_portion_of_file_to_hash_table();
         } else {
             db_file_stream_.open(MEDIUM_FILE_NAME, ios::in | ios::out);
             if (db_file_stream_.good()) {
                 init_data_set_alignment_info(DataSetType::medium);
+                yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
                 yche_map_.read_portion_of_file_to_hash_table();
             }
             else {
                 db_file_stream_.open(MEDIUM_FILE_NAME, ios::in | ios::out);
                 if (db_file_stream_.good()) {
                     init_data_set_alignment_info(DataSetType::large);
+                    yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
                     yche_map_.read_portion_of_file_to_hash_table();
                 }
                 else
@@ -314,13 +316,16 @@ public:
             if (value_size <= static_cast<int>(ValueAlignment::small)) {
                 create_file(SMALL_FILE_NAME);
                 init_data_set_alignment_info(DataSetType::small);
+                yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
             } else if (value_size <= static_cast<int>(ValueAlignment::medium)) {
                 create_file(MEDIUM_FILE_NAME);
                 init_data_set_alignment_info(DataSetType::medium);
+                yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
             }
             else {
                 create_file(LARGE_FILE_NAME);
                 init_data_set_alignment_info(DataSetType::large);
+                yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
             }
         }
         yche_map_.insert_or_replace(key, value);
