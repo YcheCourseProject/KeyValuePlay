@@ -264,7 +264,6 @@ private:
         yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
     }
 
-
 public:
     Answer() {
         db_file_stream_.open(SMALL_FILE_NAME, ios::in | ios::out);
