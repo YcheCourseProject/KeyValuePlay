@@ -22,7 +22,7 @@ constexpr unsigned int DEFAULT_HASH_TABLE_SLOT_SIZE = 80000;
 constexpr double LOAD_FACTOR_THRESHOLD = 0.8;
 constexpr unsigned int EXTRA_ALIGNMENT_SIZE = 1;
 
-#define EXTRA_SPLIT_STRING  "\n";
+#define EXTRA_SPLIT_STRING  "\n"
 #define SMALL_FILE_NAME  "small.db"
 #define MEDIUM_FILE_NAME  "middle.db"
 #define LARGE_FILE_NAME "big.db"
@@ -126,18 +126,20 @@ private:
     inline void write_key_value_to_file(const string &key, const string &value, const size_t &hash_result) {
         auto &hash_file_slot_size = data_set_alignment_info_ptr_->hash_file_slot_size_;
         auto &key_alignment_size = data_set_alignment_info_ptr_->key_alignment_size_;
+        auto &value_alignment_size = data_set_alignment_info_ptr_->value_alignment_size_;
         auto &whole_alignment_size = data_set_alignment_info_ptr_->whole_alignment_size_;
         //linear probing
         string key_string;
+
         for (auto index = hash_result % hash_file_slot_size;; index = (++index) % hash_file_slot_size) {
             db_file_stream_ptr_->seekg(index * whole_alignment_size, ios::beg);
             db_file_stream_ptr_->read(read_buffer_, key_alignment_size);
             key_string = std::move(string(read_buffer_, 0, key_alignment_size));
             trim_right_blank(key_string);
             if (key_string.size() == 0 || key_string == key) {
-                db_file_stream_ptr_->seekp(index * whole_alignment_size + key_alignment_size, ios::beg);
-                *db_file_stream_ptr_ << left << setw(data_set_alignment_info_ptr_->value_alignment_size_)
-                                     << EXTRA_SPLIT_STRING;
+                db_file_stream_ptr_->seekp(index * whole_alignment_size, ios::beg);
+                (*db_file_stream_ptr_) << left << setw(key_alignment_size) << key << left << setw(value_alignment_size)
+                                       << value << EXTRA_SPLIT_STRING;
                 break;
             }
         }
@@ -190,6 +192,7 @@ public:
             trim_right_blank(key_string);
             if (key_string.size() != 0) {
                 value_string = std::move(string(read_buffer_, key_alignment_size, whole_alignment_size));
+                trim_right_blank(value_string);
                 insert_or_replace(key_string, value_string);
             }
         }
@@ -232,11 +235,13 @@ public:
             my_hash_table_[index].first = key;
             my_hash_table_[index].second = value;
             ++current_size_;
-            if (current_size_ / slot_max_size_ > LOAD_FACTOR_THRESHOLD &&
-                slot_max_size_ * 2 < data_set_alignment_info_ptr_->hash_in_memory_tuple_size_)
-                rebuild();
-            else
-                is_current_in_memory_table_full_ = true;
+            if (current_size_ / slot_max_size_ > LOAD_FACTOR_THRESHOLD) {
+                if (slot_max_size_ * 2 < data_set_alignment_info_ptr_->hash_in_memory_tuple_size_)
+                    rebuild();
+                else
+                    is_current_in_memory_table_full_ = true;
+
+            }
         }
     }
 };
@@ -253,6 +258,8 @@ private:
 
     void inline create_file(string filename) {
         db_file_stream_.open(filename, ios::out | ios::trunc);
+        db_file_stream_ << left << setw(data_set_alignment_info_ptr_->whole_alignment_size_ *
+                                        data_set_alignment_info_ptr_->hash_file_slot_size_) << "";
         db_file_stream_.close();
         db_file_stream_.open(filename, ios::in | ios::out);
     }
@@ -279,7 +286,7 @@ public:
                 yche_map_.read_portion_of_file_to_hash_table();
             }
             else {
-                db_file_stream_.open(MEDIUM_FILE_NAME, ios::in | ios::out);
+                db_file_stream_.open(LARGE_FILE_NAME, ios::in | ios::out);
                 if (db_file_stream_.good()) {
                     init_yche_hash_map(DataSetType::large);
                     yche_map_.read_portion_of_file_to_hash_table();
@@ -306,19 +313,18 @@ public:
 
     inline void put(string &&key, string &&value) { //存储KV
         if (is_file_exists_ == false) {
+            is_file_exists_ = true;
             auto value_size = value.size();
             if (value_size <= static_cast<size_t>(ValueAlignment::small)) {
-                create_file(SMALL_FILE_NAME);
                 init_yche_hash_map(DataSetType::small);
+                create_file(SMALL_FILE_NAME);
             } else if (value_size <= static_cast<size_t>(ValueAlignment::medium)) {
-                create_file(MEDIUM_FILE_NAME);
                 init_yche_hash_map(DataSetType::medium);
-                yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
+                create_file(MEDIUM_FILE_NAME);
             }
             else {
-                create_file(LARGE_FILE_NAME);
                 init_yche_hash_map(DataSetType::large);
-                yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
+                create_file(LARGE_FILE_NAME);
             }
         }
         yche_map_.insert_or_replace(key, value);
