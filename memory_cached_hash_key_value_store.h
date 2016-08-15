@@ -15,13 +15,14 @@
 
 using namespace std;
 
-#define FILE_NAME "tuple_transaction.db"
-#define SEPERATOR_STRING ","
 #define HASH_FUNC(x) str_hash_func_basic(x)
+constexpr char *FILE_NAME = "tuple_transaction.db";
+constexpr char *SEPERATOR_STRING = ",";
+constexpr int DEFAULT_HASH_TABLE_SLOT_SIZE = 80000;
 
 std::hash<string> str_hash_func_basic;
 
-template<size_t slot_num = 90000>
+template<size_t slot_num = DEFAULT_HASH_TABLE_SLOT_SIZE>
 class yche_string_string_map {
     vector<pair<string, string>> my_hash_table_;
     size_t current_size_{0};
@@ -43,7 +44,6 @@ class yche_string_string_map {
         }
         my_hash_table_ = std::move(my_hash_table_building);
     }
-
 
 public:
     yche_string_string_map() : my_hash_table_(slot_num) {}
@@ -80,10 +80,12 @@ public:
     }
 };
 
+
 class Answer {
 private:
-    yche_string_string_map<50000> yche_map_;
-    fstream output_file_stream_;
+    bool is_data_all_in_hash_table_{true};
+    yche_string_string_map<> yche_map_;
+    fstream db_file_stream_;
     size_t count{0};
 
     inline pair<string, string> split(const string &str) {
@@ -96,20 +98,7 @@ private:
 
 public:
     Answer() {
-        ifstream input_file_stream{FILE_NAME, ios::in | ios::binary};
-        if (input_file_stream.is_open()) {
-            string tmp_string;
-            for (; input_file_stream.good();) {
-                getline(input_file_stream, tmp_string);
-                if (tmp_string.size() > 0) {
-                    auto my_pair = split(tmp_string);
-                    yche_map_.insert_or_replace(my_pair.first, my_pair.second);
-                }
-            }
-        } else {
-            input_file_stream.close();
-        }
-        output_file_stream_.open(FILE_NAME, std::ios::out | std::ios::app | std::ios::binary);
+
     }
 
     inline string get(string &&key) { //读取KV
@@ -124,10 +113,10 @@ public:
 
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
-        output_file_stream_ << key << SEPERATOR_STRING << value << '\n';
+        db_file_stream_ << key << SEPERATOR_STRING << value << '\n';
         string *tmp_ptr = yche_map_.find(key);
         if (tmp_ptr == nullptr && (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7)) {
-            output_file_stream_ << flush;
+            db_file_stream_ << flush;
         }
         yche_map_.insert_or_replace(key, value);
     }

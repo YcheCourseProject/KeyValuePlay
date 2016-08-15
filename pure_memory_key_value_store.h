@@ -15,14 +15,16 @@
 
 using namespace std;
 
-#define FILE_NAME "tuple_transaction.db"
-#define SEPERATOR_STRING ","
 #define HASH_FUNC(x) str_hash_func_basic(x)
+constexpr char *FILE_NAME = "tuple_transaction.db";
+constexpr char *SEPERATOR_STRING = ",";
+constexpr int DEFAULT_HASH_TABLE_SLOT_SIZE = 80000;
 
 std::hash<string> str_hash_func_basic;
 
-template<size_t slot_num = 90000>
+template<size_t slot_num = DEFAULT_HASH_TABLE_SLOT_SIZE>
 class yche_string_string_map {
+private:
     vector<pair<string, string>> my_hash_table_;
     size_t current_size_{0};
     size_t slot_max_size_{slot_num};
@@ -47,6 +49,10 @@ class yche_string_string_map {
 
 public:
     yche_string_string_map() : my_hash_table_(slot_num) {}
+
+    inline void resize_at_begin(int size) {
+        my_hash_table_.resize(size);
+    }
 
     inline size_t size() {
         return current_size_;
@@ -82,8 +88,8 @@ public:
 
 class Answer {
 private:
-    yche_string_string_map<50000> yche_map_;
-    fstream output_file_stream_;
+    yche_string_string_map<> yche_map_;
+    fstream db_file_stream_;
     size_t count{0};
 
     inline pair<string, string> split(const string &str) {
@@ -109,7 +115,7 @@ public:
         } else {
             input_file_stream.close();
         }
-        output_file_stream_.open(FILE_NAME, std::ios::out | std::ios::app | std::ios::binary);
+        db_file_stream_.open(FILE_NAME, std::ios::out | std::ios::app | std::ios::binary);
     }
 
     inline string get(string &&key) { //读取KV
@@ -124,10 +130,10 @@ public:
 
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
-        output_file_stream_ << key << SEPERATOR_STRING << value << '\n';
+        db_file_stream_ << key << SEPERATOR_STRING << value << '\n';
         string *tmp_ptr = yche_map_.find(key);
         if (tmp_ptr == nullptr && (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7)) {
-            output_file_stream_ << flush;
+            db_file_stream_ << flush;
         }
         yche_map_.insert_or_replace(key, value);
     }
