@@ -63,6 +63,21 @@ void write_frog_study() {
     }
 }
 
+void read_frog_study() {
+    char my_line_buffer[12];
+    string tmp_string;
+    fstream input_stream("frog_write.txt", ios::in);
+    input_stream.seekg(0, ios::end);
+    auto length = input_stream.tellg();
+    input_stream.seekg(0, ios::beg);
+    for (auto i = 0; i < length / 12; i++) {
+        input_stream.seekg(12 * i, ios::beg);
+        input_stream.read(my_line_buffer, 12);
+        tmp_string = std::move(string(my_line_buffer));
+        cout << i << "," << tmp_string << "," << tmp_string.size() << endl << endl;
+    }
+}
+
 void write_meta_and_read() {
     fstream my_meta_stream("yche.txt", ios::in | ios::out | ios::app);
     my_meta_stream.seekp(0, ios::beg);
@@ -74,11 +89,13 @@ void write_meta_and_read() {
     cout << "!" << endl;
 }
 
+
 int main() {
 //    output_study();
 //    input_study();
-    write_frog_study();
+//    write_frog_study();
 //    write_meta_and_read();
+    read_frog_study();
 }
 
 
