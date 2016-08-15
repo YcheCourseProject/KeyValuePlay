@@ -24,7 +24,7 @@ void get_test() {
 int main() {
     Answer naive_store;
 
-//    basic_test();
+    basic_test();
     get_test();
 //    naive_store.put("get", "haha");
 //    cout << naive_store.get("get") << endl;
