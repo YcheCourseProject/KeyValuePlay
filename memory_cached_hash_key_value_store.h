@@ -102,7 +102,7 @@ private:
     size_t slot_max_size_{slot_num};
 
     //structure for persistence
-    bool is_current_in_memory_table_fulll_{false};
+    bool is_current_in_memory_table_full_{false};
 
 
     inline void rebuild() {
@@ -122,16 +122,24 @@ private:
         my_hash_table_ = std::move(my_hash_table_building);
     }
 
-    inline void write_key_value_to_file(const string &key, const string &value) {
+    inline void write_key_value_to_file(const string &key, const string &value, const size_t &hash_result) {
 
     }
 
 public:
+    DataSetAlignmentInfo *data_set_alignment_info_ptr_{nullptr};
+    fstream *db_file_stream_ptr_{nullptr};
+    char *read_buffer = nullptr;
+
     yche_string_string_map() : my_hash_table_(slot_num) {}
 
-    DataSetAlignmentInfo *data_set_alignment_info_ptr_{nullptr};
+    virtual ~yche_string_string_map() {
+        delete[]read_buffer;
+    }
 
-    fstream *db_file_stream_ptr_{nullptr};
+    void inline read_portion_of_file_to_hash_table(char *filename) {
+
+    }
 
     inline size_t size() {
         return current_size_;
@@ -148,37 +156,44 @@ public:
         }
 
         //if in-memory hash_table is full search in file, read file
-        index = hash_result % data_set_alignment_info_ptr_->hash_file_slot_size_;
-        //linear probing
+        if (is_current_in_memory_table_full_ == true) {
+            index = hash_result % data_set_alignment_info_ptr_->hash_file_slot_size_;
+            //linear probing
+
+        }
 
         return nullptr;
     }
 
     inline void insert_or_replace(const string &key, const string &value) {
-        auto index = HASH_FUNC(key) % slot_max_size_;
+        auto hash_result = HASH_FUNC(key);
+        auto index = hash_result % slot_max_size_;
         for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
                 my_hash_table_[index].second = value;
                 return;
             }
         }
-        if (is_current_in_memory_table_fulll_ == false) {
+
+        //not hit in memory, judge whether memory is full
+        if (is_current_in_memory_table_full_ == false) {
             my_hash_table_[index].first = key;
             my_hash_table_[index].second = value;
             if (current_size_ / slot_max_size_ > 0.8) {
                 if (slot_max_size_ * 2 < data_set_alignment_info_ptr_->hash_in_memory_tuple_size_)
                     rebuild();
                 else {
-                    is_current_in_memory_table_fulll_ = true;
+                    is_current_in_memory_table_full_ = true;
+                    write_key_value_to_file(key, value, hash_result);
                 }
                 ++current_size_;
             }
         } else {
             //write to the db file
+            write_key_value_to_file(key, value, hash_result);
         }
     }
 };
-
 
 class Answer {
 private:
@@ -203,10 +218,7 @@ private:
     void inline init_yche_hash_map() {
         yche_map_.db_file_stream_ptr_ = &db_file_stream_;
         yche_map_.data_set_alignment_info_ptr_ = data_set_alignment_info_ptr_;
-    }
-
-    void inline read_portion_of_file_to_hash_table(char *filename) {
-
+        yche_map_.read_buffer = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
     }
 
 public:
@@ -215,19 +227,19 @@ public:
         db_file_stream_.open(SMALL_FILE_NAME, ios::in | ios::out);
         is_file_exists_ = true;
         if (db_file_stream_.good()) {
-            read_portion_of_file_to_hash_table(SMALL_FILE_NAME);
             init_data_set_alignment_info(DataSetType::small);
+            yche_map_.read_portion_of_file_to_hash_table(SMALL_FILE_NAME);
         } else {
             db_file_stream_.open(MEDIUM_FILE_NAME, ios::in | ios::out);
             if (db_file_stream_.good()) {
-                read_portion_of_file_to_hash_table(MEDIUM_FILE_NAME);
                 init_data_set_alignment_info(DataSetType::medium);
+                yche_map_.read_portion_of_file_to_hash_table(MEDIUM_FILE_NAME);
             }
             else {
                 db_file_stream_.open(MEDIUM_FILE_NAME, ios::in | ios::out);
                 if (db_file_stream_.good()) {
-                    read_portion_of_file_to_hash_table(LARGE_FILE_NAME);
                     init_data_set_alignment_info(DataSetType::large);
+                    yche_map_.read_portion_of_file_to_hash_table(LARGE_FILE_NAME);
                 }
                 else
                     is_file_exists_ = false;
