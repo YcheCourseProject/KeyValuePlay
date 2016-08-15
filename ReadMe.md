@@ -8,6 +8,10 @@
     - Description: use hash-index for file, in-memory hash_table
     - [Code ](memory_cached_hash_key_value_store.h)
 
+- Optimization Strategy
+    - add log of occupied index for accelerating the reading
+    - hash to multiple files, within 10000 files
+    
 ##Problem Feature
 ###Key-Value alignment boundary is fixed as follows(Unit:Byte)
 
