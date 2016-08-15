@@ -1,4 +1,13 @@
 #Key-Value Store
+##Done Work
+- Pure-Memory-Key-Value
+    - Description: put all data into memory, hash_table
+    - [Code](pure_memory_key_value_store.h)
+
+- Memory-Cached-Fix-Alignment-File-Hash
+    - Description: use hash-index for file, in-memory hash_table
+    - [Code ](memory_cached_hash_key_value_store.h)
+
 ##Problem Feature
 ###Key-Value alignment boundary is fixed as follows(Unit:Byte)
 
