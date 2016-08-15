@@ -20,7 +20,7 @@ using namespace std;
 
 std::hash<string> str_hash_func_basic;
 
-inline size_t get_hash_file_name(const string &to_persistent_string) {
+inline size_t get_hash_file_index(const string &to_persistent_string) {
     return HASH_FUNC(to_persistent_string) % DB_FILE_NUM;
 }
 
@@ -44,10 +44,9 @@ public:
     }
 
     inline string get(string &&key) { //读取KV
-        size_t file_hash_index = get_hash_file_name(key);
+        size_t file_hash_index = get_hash_file_index(key);
         fstream input_file_stream(to_string(file_hash_index), ios::in | ios::binary);
 
-        input_file_stream.seekg(0, ios::beg);
         string tmp_string;
         string *result_ptr = nullptr;
         pair<string, string> my_pair;
@@ -55,7 +54,6 @@ public:
             getline(input_file_stream, tmp_string);
             if (tmp_string.size() > 0) {
                 my_pair = split(tmp_string);
-                my_pair.second = my_pair.second.substr(0, my_pair.second.size() - 1);
                 if (my_pair.first == key) {
                     result_ptr = &my_pair.second;
                 }
@@ -69,7 +67,7 @@ public:
 
     //Can be optimized with first read, remove duplicate and then write whole
     inline void put(string &&key, string &&value) { //存储KV
-        size_t file_hash_index = get_hash_file_name(key);
+        size_t file_hash_index = get_hash_file_index(key);
         fstream output_stream(to_string(file_hash_index), ios::out | ios::app | ios::binary);
         output_stream << key << ',' << value << '\n' << flush;
         output_stream.close();
