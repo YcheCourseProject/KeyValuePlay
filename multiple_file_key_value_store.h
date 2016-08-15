@@ -45,20 +45,18 @@ public:
         string tmp_string;
         string *result_ptr = nullptr;
         pair<string, string> my_pair;
-        if (input_file_stream.is_open()) {
-            for (; input_file_stream.good();) {
-                getline(input_file_stream, tmp_string);
-                if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING
-                        && find(tmp_string.begin(),tmp_string.end(),',')!=tmp_string.end()) {
-                    my_pair = split(tmp_string);
-                    if (my_pair.first == key) {
-                        result_ptr = &my_pair.second;
-                    }
+        for (; input_file_stream.good();) {
+            getline(input_file_stream, tmp_string);
+            if (tmp_string.size() > 0 && tmp_string.substr(tmp_string.size() - 1) == SEPERATOR_END_STRING
+                && find(tmp_string.begin(), tmp_string.end(), ',') != tmp_string.end()) {
+                my_pair = split(tmp_string);
+                if (my_pair.first == key) {
+                    result_ptr = &my_pair.second;
                 }
             }
-            if (result_ptr != nullptr) {
-                return *result_ptr;
-            }
+        }
+        if (result_ptr != nullptr) {
+            return *result_ptr;
         }
         input_file_stream.close();
         return "NULL";
