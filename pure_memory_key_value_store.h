@@ -106,13 +106,13 @@ public:
         string tmp_string;
         for (; input_file_stream.good();) {
             getline(input_file_stream, tmp_string);
-            if (tmp_string.size() > 0) {
+            if (input_file_stream.good()) {
                 auto my_pair = split(tmp_string);
                 yche_map_.insert_or_replace(my_pair.first, my_pair.second);
             }
         }
 
-//        db_file_stream_.clear(ios::goodbit);
+//        db_file_stream_.clear();
         //invalidate due to eof flag
         db_file_stream_.open(FILE_NAME, ios::out | ios::app | ios::binary);
     }
@@ -130,8 +130,7 @@ public:
     inline void put(string &&key, string &&value) { //存储KV
         ++count;
         db_file_stream_ << key << SEPERATOR_STRING << value << '\n';
-        string *tmp_ptr = yche_map_.find(key);
-        if (tmp_ptr == nullptr && (count % 13 == 1 || count % 13 == 3 || count % 13 == 11)) {
+        if ((count % 13 == 1 || count % 13 == 3 || count % 13 == 11)) {
             db_file_stream_ << flush;
         }
         yche_map_.insert_or_replace(key, value);

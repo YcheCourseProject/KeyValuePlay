@@ -6,6 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g -Wall")
 add_executable(navie_store multiple_file_key_value_store.h pure_memory_key_value_store.h test_multiple_file_naive_store.cpp)
 add_executable(pure_memory_key_value_store pure_memory_key_value_store.h serializer.h test_pure_memory_store.cpp)
 add_executable(test_memory_caced_key_value_store memory_cached_hash_key_value_store.h test_memory_caced_key_value_store.cpp)
+#add_executable(test_simple_key_value_store simple_key_value_store.h test_simple_key_value_store.cpp)
 
 add_subdirectory(malloc-test)
 add_subdirectory(unorder_map_string_string)
