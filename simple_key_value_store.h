@@ -27,7 +27,7 @@ public:
         yche_map.reserve(60000);
         yche_stream_.open(FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
         string key_string;
-        string value_string
+        string value_string;
         for (; yche_stream_.good();) {
             getline(yche_stream_, key_string);
             if (yche_stream_.good()) {
