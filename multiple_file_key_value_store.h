@@ -61,7 +61,6 @@ public:
             if (result_ptr != nullptr)
                 return *result_ptr;
         }
-        input_file_stream.close();
         return "NULL";
     }
 
@@ -70,7 +69,6 @@ public:
         size_t file_hash_index = get_hash_file_index(key);
         fstream output_stream(to_string(file_hash_index), ios::out | ios::app | ios::binary);
         output_stream << key << ',' << value << '\n' << flush;
-        output_stream.close();
     }
 };
 

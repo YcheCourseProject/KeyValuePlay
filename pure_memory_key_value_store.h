@@ -102,19 +102,17 @@ private:
 
 public:
     Answer() {
-        ifstream input_file_stream{FILE_NAME, ios::in | ios::binary};
-        if (input_file_stream.is_open()) {
-            string tmp_string;
-            for (; input_file_stream.good();) {
-                getline(input_file_stream, tmp_string);
-                if (tmp_string.size() > 0) {
-                    auto my_pair = split(tmp_string);
-                    yche_map_.insert_or_replace(my_pair.first, my_pair.second);
-                }
+        ifstream input_file_stream{FILE_NAME, ios::in | ios::out | std::ios::app | ios::binary};
+        string tmp_string;
+        for (; input_file_stream.good();) {
+            getline(input_file_stream, tmp_string);
+            if (tmp_string.size() > 0) {
+                auto my_pair = split(tmp_string);
+                yche_map_.insert_or_replace(my_pair.first, my_pair.second);
             }
-        } else {
-            input_file_stream.close();
         }
+
+        //invalidate due to eof flag
         db_file_stream_.open(FILE_NAME, std::ios::out | std::ios::app | std::ios::binary);
     }
 
