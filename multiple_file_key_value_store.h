@@ -18,7 +18,7 @@ using namespace std;
 #define SEPERATOR_STRING ","
 #define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
-#define DB_FILE_NUM 1000
+#define DB_FILE_NUM 4000
 
 template<typename _Tp, typename... _Args>
 inline unique_ptr<_Tp> make_unique(_Args &&... __args) {
@@ -38,6 +38,8 @@ inline pair<string, string> split(const string &str) {
     return make_pair(string(iter_begin, iter_middle),
                      string(iter_middle + 1, iter_end));
 }
+
+constexpr unsigned int BUFFER_LENGTH = 8192;
 
 class Answer {
 private:
