@@ -1,5 +1,9 @@
 #Key-Value Store
 ##Done Work
+- Naive-Hash-Index-as-File-Name
+    - Description: put key,value pair into corresponding hash_index_as_name file
+    - [Code](multiple_file_key_value_store.h)   
+    
 - Pure-Memory-Key-Value
     - Description: put all data into memory, hash_table
     - [Code](pure_memory_key_value_store.h)
