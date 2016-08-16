@@ -16,18 +16,12 @@ using namespace std;
 #define SEPERATOR_STRING ","
 #define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
-#define DB_FILE_NUM 1000
+#define DB_FILE_NUM 10000
 
 std::hash<string> str_hash_func_basic;
 
 inline size_t get_hash_file_index(const string &to_persistent_string) {
     return HASH_FUNC(to_persistent_string) % DB_FILE_NUM;
-}
-
-inline void trim_right_blank(string &to_trim_string) {
-    auto iter_back = std::find_if_not(to_trim_string.rbegin(), to_trim_string.rend(),
-                                      [](int c) { return std::isspace(c); }).base();
-    to_trim_string = std::string(to_trim_string.begin(), iter_back);
 }
 
 inline pair<string, string> split(const string &str) {
@@ -48,19 +42,19 @@ public:
         fstream input_file_stream(to_string(file_hash_index), ios::in | ios::binary);
 
         string tmp_string;
-        string *result_ptr = nullptr;
+        string result_string;
         pair<string, string> my_pair;
         for (; input_file_stream.good();) {
             getline(input_file_stream, tmp_string);
             if (tmp_string.size() > 0) {
                 my_pair = split(tmp_string);
                 if (my_pair.first == key) {
-                    result_ptr = &my_pair.second;
+                    result_string = std::move(my_pair.second);
                 }
             }
-            if (result_ptr != nullptr)
-                return *result_ptr;
         }
+        if (result_string.size() > 0)
+            return result_string;
         return "NULL";
     }
 
