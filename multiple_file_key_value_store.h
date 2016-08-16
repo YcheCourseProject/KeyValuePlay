@@ -67,8 +67,8 @@ public:
                 }
             }
         }
-        db_file_array_[file_hash_index] = make_unique<fstream>(to_string(file_hash_index),
-                                                               ios::in | ios::out | ios::app | ios::binary);
+
+        input_file_stream.clear();
         if (result_string.size() > 0)
             return result_string;
         return "NULL";
