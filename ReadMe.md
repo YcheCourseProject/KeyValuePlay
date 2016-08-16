@@ -1,21 +1,39 @@
 #Key-Value Store
+##Thinking
+- Use Boost Serialization to serialize/archive hash table, update from [Code](multiple_file_key_value_store.h)
+- Study I/O system call provided by linux
+
 ##Done Work
 - Naive-Hash-Index-as-File-Name
     - Description: put key,value pair into corresponding hash_index_as_name file
     - [Code](multiple_file_key_value_store.h)   
-    
+    - Performance
+
+Memory	| Time	| Disk Read	| Disk Write | Data | QPS/TPS | Init Time
+-----   | ----  | --------- | ---------- | ---- | ------- | -----------
+21000KB   | 773ms  | 52149KB | 7138KB | small | 45518/182702 | 57ms
+
 - Pure-Memory-Key-Value
     - Description: put all data into memory, hash_table
     - [Code](pure_memory_key_value_store.h)
+    - Performance
+
+Memory	| Time	| Disk Read	| Disk Write | Data | QPS/TPS | Init Time
+-----   | ----  | --------- | ---------- | ---- | ------- | -----------
+18344KB   | 284ms  | 17860KB | 7137KB | small | 1227486/480690 | 115ms
 
 - Memory-Cached-Fix-Alignment-File-Hash
     - Description: use hash-index for file, in-memory hash_table
     - [Code ](memory_cached_hash_key_value_store.h)
 
+Memory	| Time	| Disk Read	| Disk Write | Data | QPS/TPS | Init Time
+-----   | ----  | --------- | ---------- | ---- | ------- | -----------
+19448KB   | 1202ms  | 1345107KB | 42439KB | small | 1112520/80753 | 611ms
+
 - Optimization Strategy
     - add log of occupied index for accelerating the reading
     - hash to multiple files, within 10000 files
-    
+
 ##Problem Feature
 ###Key-Value alignment boundary is fixed as follows(Unit:Byte)
 
