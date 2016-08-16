@@ -20,10 +20,10 @@ using namespace std;
 #define HASH_FUNC(x) str_hash_func_basic(x)
 #define DB_FILE_NUM 400
 
-template<typename _Tp, typename... _Args>
-inline unique_ptr<_Tp> make_unique(_Args &&... __args) {
-    return unique_ptr<_Tp>(new _Tp(std::forward<_Args>(__args)...));
-}
+//template<typename _Tp, typename... _Args>
+//inline unique_ptr<_Tp> make_unique(_Args &&... __args) {
+//    return unique_ptr<_Tp>(new _Tp(std::forward<_Args>(__args)...));
+//}
 
 std::hash<string> str_hash_func_basic;
 

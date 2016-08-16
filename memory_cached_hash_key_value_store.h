@@ -13,6 +13,7 @@
 #include <functional>
 #include <iostream>
 #include <iomanip>
+#include <cstring>
 
 using namespace std;
 
@@ -24,8 +25,12 @@ constexpr unsigned int EXTRA_ALIGNMENT_SIZE = 1;
 
 #define EXTRA_SPLIT_STRING  "\n"
 #define SMALL_FILE_NAME  "small.db"
-#define MEDIUM_FILE_NAME  "middle.db"
-#define LARGE_FILE_NAME "big.db"
+#define MEDIUM_FILE_NAME  "medium.db"
+#define LARGE_FILE_NAME "large.db"
+
+#define SMALL_INDEX_FILE_NAME "index_small.txt"
+#define MEDIUM_INDEX_FILE_NAME "index_medium.txt"
+#define LARGE_INDEX_FILE_NAME "index_large.txt"
 
 enum class KeyAlignment {
     small = 70,
@@ -93,6 +98,16 @@ inline void trim_right_blank(string &to_trim_string) {
     to_trim_string = std::string(to_trim_string.begin(), iter_back);
 }
 
+void SerializeInt32(char (&buf)[4], int32_t val) {
+    std::memcpy(buf, &val, 4);
+}
+
+int32_t ParseInt32(const char (&buf)[4]) {
+    int32_t val;
+    std::memcpy(&val, buf, 4);
+    return val;
+}
+
 std::hash<string> str_hash_func_basic;
 
 template<size_t slot_num = DEFAULT_HASH_TABLE_SLOT_SIZE>
@@ -136,6 +151,10 @@ private:
             db_file_stream_ptr_->read(read_buffer_, key_alignment_size);
             key_string = std::move(string(read_buffer_, 0, key_alignment_size));
             trim_right_blank(key_string);
+            if (key_string.size() == 0) {
+                SerializeInt32(index_chars_array_, index);
+                index_file_stream_ptr->write(index_chars_array_, 4);
+            }
             if (key_string.size() == 0 || key_string == key) {
                 db_file_stream_ptr_->seekp(index * whole_alignment_size, ios::beg);
                 (*db_file_stream_ptr_) << left << setw(key_alignment_size) << key << left << setw(value_alignment_size)
@@ -170,8 +189,11 @@ private:
 public:
     DataSetAlignmentInfo *data_set_alignment_info_ptr_{nullptr};
     fstream *db_file_stream_ptr_{nullptr};
+    fstream *index_file_stream_ptr{nullptr};
 
     char *read_buffer_{nullptr};
+    char index_chars_array_[4];
+    vector<int32_t> index_array_;
 
     yche_string_string_map() : my_hash_table_(slot_num) {}
 
@@ -179,22 +201,34 @@ public:
         delete[]read_buffer_;
     }
 
+    void inline read_indices_into_index_array() {
+        index_file_stream_ptr->seekg(0, ios::end);
+        auto length = index_file_stream_ptr->tellg();
+        index_array_.resize(length / 4);
+        for (auto i = 0; i < length / 4; i++) {
+            index_file_stream_ptr->seekg(4 * i, ios::beg);
+            index_file_stream_ptr->read(index_chars_array_, 4);
+            if (index_file_stream_ptr->good()) {
+                index_array_[i] = ParseInt32(index_chars_array_);
+            }
+        }
+    }
+
     void inline read_portion_of_file_to_hash_table() {
+        read_indices_into_index_array();
+        index_file_stream_ptr->clear();
         auto &whole_alignment_size = data_set_alignment_info_ptr_->whole_alignment_size_;
         auto &key_alignment_size = data_set_alignment_info_ptr_->key_alignment_size_;
         string key_string;
         string value_string;
-        for (size_t index = 0; index < data_set_alignment_info_ptr_->hash_file_slot_size_ &&
-                               is_current_in_memory_table_full_ == false; index++) {
+        for (auto &index:index_array_) {
             db_file_stream_ptr_->seekg(index * whole_alignment_size, ios::beg);
             db_file_stream_ptr_->read(read_buffer_, whole_alignment_size);
             key_string = std::move(string(read_buffer_, 0, key_alignment_size));
             trim_right_blank(key_string);
-            if (key_string.size() != 0) {
-                value_string = std::move(string(read_buffer_, key_alignment_size, whole_alignment_size));
-                trim_right_blank(value_string);
-                insert_or_replace(key_string, value_string);
-            }
+            value_string = std::move(string(read_buffer_, key_alignment_size, whole_alignment_size));
+            trim_right_blank(value_string);
+            insert_or_replace(key_string, value_string);
         }
     }
 
@@ -240,7 +274,6 @@ public:
                     rebuild();
                 else
                     is_current_in_memory_table_full_ = true;
-
             }
         }
     }
@@ -248,15 +281,14 @@ public:
 
 class Answer {
 private:
-
     yche_string_string_map<> yche_map_;
     bool is_file_exists_{false};
     fstream db_file_stream_;
+    fstream index_file_stream_;
     size_t count{0};
     DataSetAlignmentInfo *data_set_alignment_info_ptr_{nullptr};
 
-
-    void inline create_file(string filename) {
+    void inline create_db_file(string filename) {
         db_file_stream_.open(filename, ios::out | ios::trunc);
         db_file_stream_ << left << setw(data_set_alignment_info_ptr_->whole_alignment_size_ *
                                         data_set_alignment_info_ptr_->hash_file_slot_size_) << "";
@@ -264,10 +296,22 @@ private:
         db_file_stream_.open(filename, ios::in | ios::out);
     }
 
+    void inline open_index_file(string filename) {
+        index_file_stream_.open(filename, ios::in | ios::out | ios::app);
+    }
+
     void inline init_yche_hash_map(DataSetType data_set_type) {
+        if (data_set_type == DataSetType::small) {
+            open_index_file(SMALL_INDEX_FILE_NAME);
+        } else if (data_set_type == DataSetType::medium) {
+            open_index_file(MEDIUM_INDEX_FILE_NAME);
+        } else {
+            open_index_file(LARGE_INDEX_FILE_NAME);
+        }
         data_set_alignment_info_ptr_ = new DataSetAlignmentInfo(data_set_type);
         yche_map_.data_set_alignment_info_ptr_ = data_set_alignment_info_ptr_;
         yche_map_.db_file_stream_ptr_ = &db_file_stream_;
+        yche_map_.index_file_stream_ptr = &index_file_stream_;
         yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
     }
 
@@ -317,20 +361,21 @@ public:
             auto value_size = value.size();
             if (value_size <= static_cast<size_t>(ValueAlignment::small)) {
                 init_yche_hash_map(DataSetType::small);
-                create_file(SMALL_FILE_NAME);
+                create_db_file(SMALL_FILE_NAME);
             } else if (value_size <= static_cast<size_t>(ValueAlignment::medium)) {
                 init_yche_hash_map(DataSetType::medium);
-                create_file(MEDIUM_FILE_NAME);
+                create_db_file(MEDIUM_FILE_NAME);
             }
             else {
                 init_yche_hash_map(DataSetType::large);
-                create_file(LARGE_FILE_NAME);
+                create_db_file(LARGE_FILE_NAME);
             }
         }
         yche_map_.insert_or_replace(key, value);
         ++count;
         if (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7) {
             db_file_stream_ << flush;
+            index_file_stream_ << flush;
         }
     }
 };
