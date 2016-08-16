@@ -201,6 +201,10 @@ public:
         delete[]read_buffer_;
     }
 
+    void inline resize(size_t size){
+        my_hash_table_.resize(size);
+    }
+
     void inline read_indices_into_index_array() {
         index_file_stream_ptr->seekg(0, ios::end);
         auto length = index_file_stream_ptr->tellg();
@@ -313,6 +317,7 @@ private:
         yche_map_.db_file_stream_ptr_ = &db_file_stream_;
         yche_map_.index_file_stream_ptr = &index_file_stream_;
         yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
+        yche_map_.resize(data_set_alignment_info_ptr_->hash_in_memory_tuple_size_);
     }
 
 public:
