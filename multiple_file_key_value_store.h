@@ -18,7 +18,7 @@ using namespace std;
 #define SEPERATOR_STRING ","
 #define SEPERATOR_END_STRING ";"
 #define HASH_FUNC(x) str_hash_func_basic(x)
-#define DB_FILE_NUM 4000
+#define DB_FILE_NUM 400
 
 template<typename _Tp, typename... _Args>
 inline unique_ptr<_Tp> make_unique(_Args &&... __args) {
