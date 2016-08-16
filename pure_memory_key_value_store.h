@@ -102,7 +102,7 @@ private:
 
 public:
     Answer() {
-        ifstream input_file_stream{FILE_NAME, ios::in | ios::out | std::ios::app | ios::binary};
+        fstream input_file_stream{FILE_NAME, ios::in | ios::out | ios::app | ios::binary};
         string tmp_string;
         for (; input_file_stream.good();) {
             getline(input_file_stream, tmp_string);
@@ -112,8 +112,9 @@ public:
             }
         }
 
+//        db_file_stream_.clear(ios::goodbit);
         //invalidate due to eof flag
-        db_file_stream_.open(FILE_NAME, std::ios::out | std::ios::app | std::ios::binary);
+        db_file_stream_.open(FILE_NAME, ios::out | ios::app | ios::binary);
     }
 
     inline string get(string &&key) { //读取KV

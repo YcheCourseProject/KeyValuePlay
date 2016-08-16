@@ -11,7 +11,7 @@ void basic_test() {
         advanced_store.put(to_string(i), to_string(i + 1));
         cout << advanced_store.get(to_string(i)) << endl;
     }
-
+    make_unique()
 }
 
 void get_test() {
