@@ -22,6 +22,7 @@ std::hash<string> str_hash_func_basic;
 
 class Answer {
     array<fstream, 1000> my_file_streams_;
+    array<bool, 1000> mark_flags_;
     unordered_map<string, int> key_set_;
 
 public:
@@ -34,6 +35,7 @@ public:
         if (is.good()) {
             string value;
             is >> value;
+            is.close();
             return value;
         } else {
             return "NULL";
@@ -43,6 +45,7 @@ public:
     void put(string key, string value) { //存储KV
         ofstream os(key);
         os << value << flush;
+        os.close();
     }
 };
 
