@@ -1,10 +1,10 @@
 //
 // Created by cheyulin on 8/12/16.
 //
-#include <sys/stat.h>
 #include <dirent.h>
 #include <iostream>
 #include <sstream>
+#include <sys/stat.h>
 
 using namespace std;
 
