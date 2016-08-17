@@ -8,8 +8,8 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <unordered_map>
 #include <sstream>
+#include <unordered_map>
 #include <map>
 #include <iomanip>
 #include <algorithm>
@@ -29,7 +29,6 @@
 
 using namespace std;
 
-
 class Answer {
 private:
     unordered_map<string, int> key_index_map_;
@@ -40,7 +39,7 @@ private:
 
     int key_alignment_{0};
     int value_alignment_{0};
-    int cache_max_size_{5000};
+    int cache_max_size_{50};
     bool is_first_in_{false};
     char *value_chars_;
 
@@ -146,7 +145,7 @@ public:
         delete[]value_chars_;
     }
 
-    inline string get(string key) {
+    inline string get(string &&key) {
         if (key_index_map_.find(key) == key_index_map_.end()) {
             return "NULL";
         }
@@ -162,7 +161,7 @@ public:
         }
     }
 
-    inline void put(string key, string value) {
+    inline void put(string &&key, string &&value) {
         if (is_first_in_) {
             init_db_file(value);
             is_first_in_ = false;
