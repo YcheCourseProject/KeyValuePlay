@@ -31,6 +31,7 @@ public:
             if (key_filename_stream_.good()) {
                 getline(key_filename_stream_, file_name_str);
                 key_file_name_map_[key_str] = file_name_str;
+                file_name_num_++;
             }
         }
         key_filename_stream_.clear();
