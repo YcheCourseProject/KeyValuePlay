@@ -16,6 +16,8 @@ void yche_mkdir(string dir_name) {
 }
 
 int main() {
+    string s("/");
+    cout <<s <<endl;
     stringstream ss;
     for (auto i = 0; i < 255; i++)
         ss << "1";
