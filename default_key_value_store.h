@@ -40,7 +40,7 @@ private:
 
     int key_alignment_{0};
     int value_alignment_{0};
-    int cache_max_size_{1000};
+    int cache_max_size_{5000};
     bool is_first_in_{false};
     char *value_chars_;
 
@@ -60,38 +60,71 @@ private:
 
     inline void read_db_info() {
         key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app);
-        if (key_index_stream_.good()) {
-            db_stream_.open(SMALL_DB_NAME, ios::in | ios::out);
-            if (db_stream_.good() == true) {
-                key_alignment_ = SMALL_KEY_ALIGNMENT;
-                value_alignment_ = SMALL_VALUE_ALIGNMENT;
-            } else {
-                db_stream_.open(MEDIUM_DB_NAME, ios::in | ios::out);
-                if (db_stream_.good() == true) {
-                    key_alignment_ = MEDIUM_KEY_ALIGNMENT;
-                    value_alignment_ = MEDIUM_VALUE_ALIGNMENT;
-
-                } else {
-                    db_stream_.open(LARGE_DB_NAME, ios::in | ios::out);
-                    key_alignment_ = LARGE_KEY_ALIGNMENT;
-                    value_alignment_ = LARGE_VALUE_ALIGNMENT;
-                }
-            }
+        db_stream_.open(SMALL_DB_NAME, ios::in | ios::out);
+        if (db_stream_.good() == true) {
+            key_alignment_ = SMALL_KEY_ALIGNMENT;
+            value_alignment_ = SMALL_VALUE_ALIGNMENT;
             value_chars_ = new char[value_alignment_];
         } else {
-            is_first_in_ = true;
+            db_stream_.open(MEDIUM_DB_NAME, ios::in | ios::out);
+            if (db_stream_.good() == true) {
+                key_alignment_ = MEDIUM_KEY_ALIGNMENT;
+                value_alignment_ = MEDIUM_VALUE_ALIGNMENT;
+                value_chars_ = new char[value_alignment_];
+            } else {
+                db_stream_.open(LARGE_DB_NAME, ios::in | ios::out);
+                if (db_stream_.good() == true) {
+                    key_alignment_ = LARGE_KEY_ALIGNMENT;
+                    value_alignment_ = LARGE_VALUE_ALIGNMENT;
+                    value_chars_ = new char[value_alignment_];
+                }
+                else {
+                    is_first_in_ = true;
+                }
+            }
         }
+//        if (is_first_in_ == false)
+//            read_some_buffer_info();
     }
+
+//    inline void read_some_buffer_info() {
+//        auto i = 0;
+//        char *key_string = new char[key_alignment_];
+//        char *value_string = new char[value_alignment_];
+//        string key;
+//        string value;
+//        for (; key_value_map_.size() < cache_max_size_;) {
+//            db_stream_.seekg(i * (value_alignment_ + key_alignment_), ios::beg);
+//            db_stream_.read(key_string, key_alignment_);
+//            db_stream_.seekg(i * (value_alignment_ + key_alignment_), ios::beg);
+//            db_stream_.read(value_string, value_alignment_);
+//            key = string(key_string);
+//            trim_right_blank(key);
+//            value = string(value_string);
+//            trim_right_blank(value);
+//            key_value_map_[key] = value;
+//            i++;
+//        }
+//        delete[] key_string;
+//        delete[] value_string;
+//    }
 
     inline void init_db_file(const string &value) {
         string db_file_name;
         if (value.size() <= SMALL_VALUE_ALIGNMENT) {
             db_file_name = SMALL_DB_NAME;
+            key_alignment_ = SMALL_KEY_ALIGNMENT;
+            value_alignment_ = SMALL_VALUE_ALIGNMENT;
         } else if (value.size() <= MEDIUM_VALUE_ALIGNMENT) {
             db_file_name = MEDIUM_DB_NAME;
+            key_alignment_ = MEDIUM_KEY_ALIGNMENT;
+            value_alignment_ = MEDIUM_VALUE_ALIGNMENT;
         } else {
             db_file_name = LARGE_DB_NAME;
+            key_alignment_ = LARGE_KEY_ALIGNMENT;
+            value_alignment_ = LARGE_VALUE_ALIGNMENT;
         }
+        db_stream_.open(db_file_name, ios::out | ios::trunc);
         db_stream_.close();
         db_stream_.open(db_file_name, ios::in | ios::out);
         value_chars_ = new char[value_alignment_];
@@ -118,25 +151,21 @@ public:
             return "NULL";
         }
         else {
-//            if (key_value_map_.find(key) != key_value_map_.end()) {
-//                return key_value_map_[key];
-//            }
+            if (key_value_map_.find(key) != key_value_map_.end()) {
+                return key_value_map_[key];
+            }
             db_stream_.seekg(key_index_map_[key] * (key_alignment_ + value_alignment_) + key_alignment_);
             db_stream_.read(value_chars_, value_alignment_);
             string result_string(value_chars_);
             trim_right_blank(result_string);
-            cout << "After Trim " << result_string << endl;
             return result_string;
-//            ifstream is(key_file_name_map_[key]);
-//            string value;
-//            is >> value;
-//            is.close();
         }
     }
 
     inline void put(string key, string value) {
         if (is_first_in_) {
             init_db_file(value);
+            is_first_in_ = false;
         }
         if (key_index_map_.find(key) == key_index_map_.end()) {
             key_index_stream_ << key << "\n" << to_string(file_name_num_) << "\n" << flush;
@@ -148,11 +177,8 @@ public:
         }
         db_stream_ << left << setw(key_alignment_) << key << left << setw(value_alignment_) << value << flush;
 
-//        if (key_value_map_.find(key) != key_value_map_.end() || key_value_map_.size() < cache_max_size_)
-//            key_value_map_[key] = value;
-//        ofstream os(key_file_name_map_[key]);
-//        os << value;
-//        os.close();
+        if (key_value_map_.find(key) != key_value_map_.end() || key_value_map_.size() < cache_max_size_)
+            key_value_map_[key] = value;
     }
 };
 
