@@ -9,8 +9,6 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <unordered_map>
-#include <map>
 #include <iomanip>
 #include <algorithm>
 
@@ -33,8 +31,8 @@
 
 #define HASH_FUNC(x) str_hash_func_basic(x)
 #define DEFAULT_HASH_SLOT_SIZE 10000
-using namespace std;
 
+using namespace std;
 
 std::hash<string> str_hash_func_basic;
 
@@ -57,11 +55,9 @@ private:
                 }
                 my_hash_table_building[new_index] = std::move(my_hash_table_[previous_index]);
             }
-
         }
         my_hash_table_ = std::move(my_hash_table_building);
     }
-
 
 public:
     yche_map() {
@@ -131,9 +127,9 @@ private:
         } else if (value_alignment_ == MEDIUM_VALUE_ALIGNMENT) {
             cache_max_size_ = 150000;
         } else {
-            cache_max_size_ = 9200;
+            cache_max_size_ = 9500;
         }
-        key_value_map_.reserve(cache_max_size_*1.4);
+        key_value_map_.reserve(cache_max_size_ * 1.3);
         key_index_map_.reserve(100000);
     }
 
@@ -187,7 +183,7 @@ private:
         char *value_string = new char[value_alignment_];
         string key;
         string value;
-        for (auto i = 0; key_value_map_.size() < cache_max_size_; i++) {
+        for (auto i = 0; key_value_map_.size() < cache_max_size_; ++i) {
             db_stream_.seekg(i * (value_alignment_ + key_alignment_), ios::beg);
             db_stream_.read(key_string, key_alignment_);
             if (db_stream_.good() == false) {
@@ -239,9 +235,9 @@ public:
         delete[]buffer_chars_;
     }
 
-    inline string get(string key) {
+    inline string get(string&& key) {
         if (key_index_map_.find(key) == nullptr) {
-            return "NULL";
+            return "NULL";  
         }
         else {
             auto value_ptr = key_value_map_.find(key);
@@ -257,7 +253,7 @@ public:
         }
     }
 
-    inline void put(string key, string value) {
+    inline void put(string&& key, string&& value) {
         if (is_first_in_) {
             init_db_file(value);
             is_first_in_ = false;
@@ -271,7 +267,6 @@ public:
             db_stream_.seekp(*key_index_map_.find(key) * (key_alignment_ + value_alignment_), ios::beg);
         }
         db_stream_ << left << setw(key_alignment_) << key << left << setw(value_alignment_) << value << flush;
-
         if (key_value_map_.size() < cache_max_size_ || key_value_map_.find(key) != nullptr)
             key_value_map_.insert_or_replace(key, value);
     }
