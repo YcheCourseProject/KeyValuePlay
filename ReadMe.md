@@ -4,6 +4,23 @@
 - Study I/O system call provided by linux
 
 ##Done Work
+- Fix-Length-With-DB-Index
+    - Description: one file is db, another is index
+    - [Code](default_key_value_store.h)
+    - Performance
+        - Small, and Large
+ 
+Memory	| Time	| Disk Read	| Disk Write | Data | QPS/TPS | Init Time
+-----   | ----  | --------- | ---------- | ---- | ------- | -----------
+21716KB   | 758ms  | 695434KB | 10488KB | small | 582427/114521	 | 327ms
+        
+
+Memory	| Time	| Disk Read	| Disk Write | Data | QPS/TPS | Init Time
+-----   | ----  | --------- | ---------- | ---- | ------- | -----------
+305476KB   | 22325ms  | 2215478KB | 2875100KB | large | 36336/3579 | 3631ms
+   
+   
+   
 - Naive-Hash-Index-as-File-Name
     - Description: put key,value pair into corresponding hash_index_as_name file
     - [Code](multiple_file_key_value_store.h)   

@@ -66,7 +66,7 @@ private:
 
     inline void set_block_buffer_size() {
 //        block_size_ = BUFFER_SIZE / (key_alignment_ + value_alignment_);
-        block_size_ = 30;
+        block_size_ = 5;
     }
 
     inline void read_index_info() {
