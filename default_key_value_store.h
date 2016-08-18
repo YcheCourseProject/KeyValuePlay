@@ -182,11 +182,11 @@ public:
             }
             if (key_index_map_.size() < cache_max_size_) {
                 auto cur_index = key_index_map_[key];
-//                auto final_index = key_index_map_.size() - 1;
-                auto final_index = db_file_index_ - 1;
+                auto final_index = key_index_map_.size() - 1;
+//                auto final_index = db_file_index_ - 1;
                 auto stop_index = cur_index + block_size_ > final_index ? final_index : cur_index + block_size_;
 //                auto available_block_size = stop_index - cur_index + 1;
-                auto available_block_size = 1;
+                auto available_block_size = final_index - cur_index + 1 < 2 ? 1 : 2;
                 db_stream_.seekg(cur_index * (key_alignment_ + value_alignment_), ios::beg);
                 db_stream_.read(buffer_chars_, (key_alignment_ + value_alignment_) * available_block_size);
                 string key_string;
