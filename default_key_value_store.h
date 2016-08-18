@@ -31,12 +31,84 @@
 #define LARGE_VALUE_ALIGNMENT 30000
 #define BUFFER_SIZE 1024*1024
 
+#define HASH_FUNC(x) str_hash_func_basic(x)
+#define DEFAULT_HASH_SLOT_SIZE 10000
 using namespace std;
+
+
+std::hash<string> str_hash_func_basic;
+
+template<typename T>
+class yche_map {
+private:
+    vector<pair<string, T>> my_hash_table_;
+    size_t current_size_{0};
+    size_t slot_max_size_{DEFAULT_HASH_SLOT_SIZE};
+
+    inline void rebuild() {
+        vector<pair<string, T>> my_hash_table_building;
+        slot_max_size_ *= 2;
+        my_hash_table_building.resize(slot_max_size_);
+        for (auto previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
+            if (my_hash_table_[previous_index].first.size() > 0) {
+                auto new_index = HASH_FUNC(my_hash_table_[previous_index].first) % slot_max_size_;
+                for (; my_hash_table_building[new_index].first.size() != 0;
+                       new_index = (++new_index) % slot_max_size_) {
+                }
+                my_hash_table_building[new_index] = std::move(my_hash_table_[previous_index]);
+            }
+
+        }
+        my_hash_table_ = std::move(my_hash_table_building);
+    }
+
+
+public:
+    yche_map() {
+        reserve(DEFAULT_HASH_SLOT_SIZE);
+    }
+
+    inline void reserve(int size) {
+        my_hash_table_.resize(size);
+    }
+
+    inline size_t size() {
+        return current_size_;
+    }
+
+    inline T *find(const string &key) {
+        auto index = HASH_FUNC(key) % slot_max_size_;
+        //linear probing
+        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+            if (my_hash_table_[index].first == key) {
+                return &my_hash_table_[index].second;
+            }
+        }
+        return nullptr;
+    }
+
+    inline void insert_or_replace(const string &key, const T &value) {
+        auto index = HASH_FUNC(key) % slot_max_size_;
+        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+            if (my_hash_table_[index].first == key) {
+                my_hash_table_[index].second = value;
+                return;
+            }
+        }
+        ++current_size_;
+        my_hash_table_[index].first = key;
+        my_hash_table_[index].second = value;
+        if (current_size_ / slot_max_size_ > 0.8) {
+            rebuild();
+        }
+    }
+
+};
 
 class Answer {
 private:
-    unordered_map<string, int> key_index_map_;
-    unordered_map<string, string> key_value_map_;
+    yche_map<int> key_index_map_;
+    yche_map<string> key_value_map_;
     fstream key_index_stream_;
     fstream db_stream_;
     int db_file_index_{0};
@@ -44,7 +116,6 @@ private:
     int key_alignment_{0};
     int value_alignment_{0};
     int cache_max_size_{1000};
-    int block_size_{1};
     bool is_first_in_{false};
     char *buffer_chars_;
 
@@ -62,12 +133,9 @@ private:
         } else {
             cache_max_size_ = 9200;
         }
+        key_value_map_.reserve(cache_max_size_*1.4);
+        key_index_map_.reserve(100000);
     }
-
-//    inline void set_block_buffer_size() {
-//        block_size_ = BUFFER_SIZE / (key_alignment_ + value_alignment_);
-//        block_size_ = 5;
-//    }
 
     inline void read_index_info() {
         string key_str;
@@ -76,7 +144,7 @@ private:
             getline(key_index_stream_, key_str);
             if (key_index_stream_.good()) {
                 getline(key_index_stream_, index_str);
-                key_index_map_[key_str] = std::stoi(index_str);
+                key_index_map_.insert_or_replace(key_str, stoi(index_str));
                 db_file_index_++;
             }
         }
@@ -110,7 +178,6 @@ private:
                 read_some_buffer_info();
             }
             set_cache_max_size();
-//            set_block_buffer_size();
         }
     }
 
@@ -133,7 +200,7 @@ private:
             trim_right_blank(key);
             value = string(value_string);
             trim_right_blank(value);
-            key_value_map_[key] = value;
+            key_value_map_.insert_or_replace(key, value);
         }
         db_stream_.clear();
         delete[] key_string;
@@ -159,7 +226,6 @@ private:
         db_stream_.close();
         db_stream_.open(db_file_name, ios::in | ios::out | ios::binary);
         set_cache_max_size();
-//        set_block_buffer_size();
     }
 
 public:
@@ -174,42 +240,20 @@ public:
     }
 
     inline string get(string key) {
-        if (key_index_map_.find(key) == key_index_map_.end()) {
+        if (key_index_map_.find(key) == nullptr) {
             return "NULL";
         }
         else {
-            if (key_value_map_.find(key) != key_value_map_.end()) {
-                return key_value_map_[key];
+            auto value_ptr = key_value_map_.find(key);
+            if (value_ptr != nullptr) {
+                return *value_ptr;
             }
-//            if (key_index_map_.size() < cache_max_size_) {
-//                auto cur_index = key_index_map_[key];
-//                auto final_index = key_index_map_.size() - 1;
-//                auto stop_index = cur_index + block_size_ - 1 > final_index ? final_index : cur_index + block_size_ - 1;
-//                auto available_block_size = stop_index - cur_index + 1;
-//                db_stream_.seekg(cur_index * (key_alignment_ + value_alignment_), ios::beg);
-//                db_stream_.read(buffer_chars_, (key_alignment_ + value_alignment_) * available_block_size);
-//                string key_string;
-//                string value_string;
-//                string result_string(buffer_chars_, key_alignment_, value_alignment_);
-//                trim_right_blank(result_string);
-//                for (auto i = 0; i < available_block_size && key_value_map_.size() < cache_max_size_; i++) {
-//                    key_string = string(buffer_chars_, i * (key_alignment_ + value_alignment_),
-//                                        key_alignment_);
-//                    trim_right_blank(key_string);
-//                    value_string =
-//                            string(buffer_chars_, i * (key_alignment_ + value_alignment_) + key_alignment_,
-//                                   value_alignment_);
-//                    trim_right_blank(value_string);
-//                    key_value_map_[key_string] = value_string;
-//                }
-//                return result_string;
-//            } else {
-                db_stream_.seekg(key_index_map_[key] * (key_alignment_ + value_alignment_) + key_alignment_, ios::beg);
-                db_stream_.read(buffer_chars_, value_alignment_);
-                string result_string(buffer_chars_, 0, value_alignment_);
-                trim_right_blank(result_string);
-                return result_string;
-//            }
+            db_stream_.seekg(*key_index_map_.find(key) * (key_alignment_ + value_alignment_) + key_alignment_,
+                             ios::beg);
+            db_stream_.read(buffer_chars_, value_alignment_);
+            string result_string(buffer_chars_, 0, value_alignment_);
+            trim_right_blank(result_string);
+            return result_string;
         }
     }
 
@@ -218,18 +262,18 @@ public:
             init_db_file(value);
             is_first_in_ = false;
         }
-        if (key_index_map_.find(key) == key_index_map_.end()) {
+        if (key_index_map_.find(key) == nullptr) {
             key_index_stream_ << key << "\n" << to_string(db_file_index_) << "\n" << flush;
-            key_index_map_[key] = db_file_index_;
+            key_index_map_.insert_or_replace(key, db_file_index_);
             db_file_index_++;
             db_stream_.seekp(0, ios::end);
         } else {
-            db_stream_.seekp(key_index_map_[key] * (key_alignment_ + value_alignment_), ios::beg);
+            db_stream_.seekp(*key_index_map_.find(key) * (key_alignment_ + value_alignment_), ios::beg);
         }
         db_stream_ << left << setw(key_alignment_) << key << left << setw(value_alignment_) << value << flush;
 
-        if (key_value_map_.size() < cache_max_size_ || key_value_map_.find(key) != key_value_map_.end())
-            key_value_map_[key] = value;
+        if (key_value_map_.size() < cache_max_size_ || key_value_map_.find(key) != nullptr)
+            key_value_map_.insert_or_replace(key, value);
     }
 };
 
