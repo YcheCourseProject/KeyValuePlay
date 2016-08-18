@@ -32,14 +32,14 @@ using namespace std;
 class Answer {
 private:
     unordered_map<string, int> key_index_map_;
-    map<string, string> key_value_map_;
+    unordered_map<string, string> key_value_map_;
     fstream key_index_stream_;
     fstream db_stream_;
     int file_name_num_{0};
 
     int key_alignment_{0};
     int value_alignment_{0};
-    int cache_max_size_{50};
+    int cache_max_size_{100000};
     bool is_first_in_{false};
     char *value_chars_;
 
@@ -82,31 +82,44 @@ private:
                 }
             }
         }
-//        if (is_first_in_ == false)
-//            read_some_buffer_info();
+        if (is_first_in_ == false)
+            read_some_buffer_info();
     }
 
-//    inline void read_some_buffer_info() {
-//        auto i = 0;
-//        char *key_string = new char[key_alignment_];
-//        char *value_string = new char[value_alignment_];
-//        string key;
-//        string value;
-//        for (; key_value_map_.size() < cache_max_size_;) {
-//            db_stream_.seekg(i * (value_alignment_ + key_alignment_), ios::beg);
-//            db_stream_.read(key_string, key_alignment_);
-//            db_stream_.seekg(i * (value_alignment_ + key_alignment_), ios::beg);
-//            db_stream_.read(value_string, value_alignment_);
-//            key = string(key_string);
-//            trim_right_blank(key);
-//            value = string(value_string);
-//            trim_right_blank(value);
-//            key_value_map_[key] = value;
-//            i++;
-//        }
-//        delete[] key_string;
-//        delete[] value_string;
-//    }
+    inline void set_cache_max_size() {
+        if (value_alignment_ == SMALL_VALUE_ALIGNMENT) {
+            cache_max_size_ = 100000;
+        } else if (value_alignment_ == MEDIUM_VALUE_ALIGNMENT) {
+            cache_max_size_ = 5000;
+        } else {
+            cache_max_size_ = 1000;
+        }
+    }
+
+    inline void read_some_buffer_info() {
+        set_cache_max_size();
+        char *key_string = new char[key_alignment_];
+        char *value_string = new char[value_alignment_];
+        string key;
+        string value;
+        for (auto i = 0; key_value_map_.size() < cache_max_size_; i++) {
+            db_stream_.seekg(i * (value_alignment_ + key_alignment_), ios::beg);
+            db_stream_.read(key_string, key_alignment_);
+            if (db_stream_.good() == false) {
+                db_stream_.clear();
+                break;
+            }
+            db_stream_.seekg(i * (value_alignment_ + key_alignment_) + key_alignment_, ios::beg);
+            db_stream_.read(value_string, value_alignment_);
+            key = string(key_string);
+            trim_right_blank(key);
+            value = string(value_string);
+            trim_right_blank(value);
+            key_value_map_[key] = value;
+        }
+        delete[] key_string;
+        delete[] value_string;
+    }
 
     inline void init_db_file(const string &value) {
         string db_file_name;
@@ -127,6 +140,7 @@ private:
         db_stream_.close();
         db_stream_.open(db_file_name, ios::in | ios::out);
         value_chars_ = new char[value_alignment_];
+        set_cache_max_size();
     }
 
     inline void trim_right_blank(string &to_trim_string) {
