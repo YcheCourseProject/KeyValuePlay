@@ -58,16 +58,16 @@ private:
         if (value_alignment_ == SMALL_VALUE_ALIGNMENT) {
             cache_max_size_ = 100000;
         } else if (value_alignment_ == MEDIUM_VALUE_ALIGNMENT) {
-            cache_max_size_ = 90000;
+            cache_max_size_ = 150000;
         } else {
-            cache_max_size_ = 9000;
+            cache_max_size_ = 9200;
         }
     }
 
-    inline void set_block_buffer_size() {
+//    inline void set_block_buffer_size() {
 //        block_size_ = BUFFER_SIZE / (key_alignment_ + value_alignment_);
-        block_size_ = 5;
-    }
+//        block_size_ = 5;
+//    }
 
     inline void read_index_info() {
         string key_str;
@@ -110,7 +110,7 @@ private:
                 read_some_buffer_info();
             }
             set_cache_max_size();
-            set_block_buffer_size();
+//            set_block_buffer_size();
         }
     }
 
@@ -159,7 +159,7 @@ private:
         db_stream_.close();
         db_stream_.open(db_file_name, ios::in | ios::out | ios::binary);
         set_cache_max_size();
-        set_block_buffer_size();
+//        set_block_buffer_size();
     }
 
 public:
@@ -181,35 +181,35 @@ public:
             if (key_value_map_.find(key) != key_value_map_.end()) {
                 return key_value_map_[key];
             }
-            if (key_index_map_.size() < cache_max_size_) {
-                auto cur_index = key_index_map_[key];
-                auto final_index = key_index_map_.size() - 1;
-                auto stop_index = cur_index + block_size_ - 1 > final_index ? final_index : cur_index + block_size_ - 1;
-                auto available_block_size = stop_index - cur_index + 1;
-                db_stream_.seekg(cur_index * (key_alignment_ + value_alignment_), ios::beg);
-                db_stream_.read(buffer_chars_, (key_alignment_ + value_alignment_) * available_block_size);
-                string key_string;
-                string value_string;
-                string result_string(buffer_chars_, key_alignment_, value_alignment_);
-                trim_right_blank(result_string);
-                for (auto i = 0; i < available_block_size && key_value_map_.size() < cache_max_size_; i++) {
-                    key_string = string(buffer_chars_, i * (key_alignment_ + value_alignment_),
-                                        key_alignment_);
-                    trim_right_blank(key_string);
-                    value_string =
-                            string(buffer_chars_, i * (key_alignment_ + value_alignment_) + key_alignment_,
-                                   value_alignment_);
-                    trim_right_blank(value_string);
-                    key_value_map_[key_string] = value_string;
-                }
-                return result_string;
-            } else {
+//            if (key_index_map_.size() < cache_max_size_) {
+//                auto cur_index = key_index_map_[key];
+//                auto final_index = key_index_map_.size() - 1;
+//                auto stop_index = cur_index + block_size_ - 1 > final_index ? final_index : cur_index + block_size_ - 1;
+//                auto available_block_size = stop_index - cur_index + 1;
+//                db_stream_.seekg(cur_index * (key_alignment_ + value_alignment_), ios::beg);
+//                db_stream_.read(buffer_chars_, (key_alignment_ + value_alignment_) * available_block_size);
+//                string key_string;
+//                string value_string;
+//                string result_string(buffer_chars_, key_alignment_, value_alignment_);
+//                trim_right_blank(result_string);
+//                for (auto i = 0; i < available_block_size && key_value_map_.size() < cache_max_size_; i++) {
+//                    key_string = string(buffer_chars_, i * (key_alignment_ + value_alignment_),
+//                                        key_alignment_);
+//                    trim_right_blank(key_string);
+//                    value_string =
+//                            string(buffer_chars_, i * (key_alignment_ + value_alignment_) + key_alignment_,
+//                                   value_alignment_);
+//                    trim_right_blank(value_string);
+//                    key_value_map_[key_string] = value_string;
+//                }
+//                return result_string;
+//            } else {
                 db_stream_.seekg(key_index_map_[key] * (key_alignment_ + value_alignment_) + key_alignment_, ios::beg);
                 db_stream_.read(buffer_chars_, value_alignment_);
                 string result_string(buffer_chars_, 0, value_alignment_);
                 trim_right_blank(result_string);
                 return result_string;
-            }
+//            }
         }
     }
 
