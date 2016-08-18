@@ -29,7 +29,7 @@
 #define SMALL_VALUE_ALIGNMENT 160
 #define MEDIUM_VALUE_ALIGNMENT 3000
 #define LARGE_VALUE_ALIGNMENT 30000
-#define BUFFER_SIZE 1024*1024
+#define BUFFER_SIZE 1023
 
 using namespace std;
 
@@ -169,10 +169,11 @@ public:
     }
 
     virtual ~Answer() {
+        cout << "~Answer" << endl;
         delete[]buffer_chars_;
     }
 
-    inline string get(string &&key) {
+    inline string get(string key) {
         if (key_index_map_.find(key) == key_index_map_.end()) {
             return "NULL";
         }
@@ -183,27 +184,25 @@ public:
             if (key_index_map_.size() < cache_max_size_) {
                 auto cur_index = key_index_map_[key];
                 auto final_index = key_index_map_.size() - 1;
-//                auto final_index = db_file_index_ - 1;
                 auto stop_index = cur_index + block_size_ > final_index ? final_index : cur_index + block_size_;
-//                auto available_block_size = stop_index - cur_index + 1;
-                auto available_block_size = final_index - cur_index + 1 < 2 ? 1 : 2;
+                auto available_block_size = stop_index - cur_index + 1;
                 db_stream_.seekg(cur_index * (key_alignment_ + value_alignment_), ios::beg);
                 db_stream_.read(buffer_chars_, (key_alignment_ + value_alignment_) * available_block_size);
                 string key_string;
                 string value_string;
-                string result_string(buffer_chars_, key_alignment_, key_alignment_ + value_alignment_);
+                string result_string(buffer_chars_, key_alignment_, value_alignment_);
                 trim_right_blank(result_string);
-//                for (auto i = 0; i < available_block_size && key_value_map_.size() < cache_max_size_; i++) {
-//                    key_string = std::move(string(buffer_chars_, i * (key_alignment_ + value_alignment_),
-//                                                  i * (key_alignment_ + value_alignment_) + key_alignment_));
-//                    trim_right_blank(key_string);
-//                    value_string = std::move(
-//                            string(buffer_chars_, i * (key_alignment_ + value_alignment_) + key_alignment_,
-//                                   (i + 1) * (key_alignment_ + value_alignment_)));
-//                    trim_right_blank(value_string);
-//                    key_value_map_[key_string] = value_string;
-//                }
-
+                for (auto i = 0; i < available_block_size && key_value_map_.size() < cache_max_size_; i++) {
+                    key_string = string(buffer_chars_, i * (key_alignment_ + value_alignment_),
+                                        key_alignment_);
+                    trim_right_blank(key_string);
+                    value_string =
+                            string(buffer_chars_, i * (key_alignment_ + value_alignment_) + key_alignment_,
+                                   value_alignment_);
+                    trim_right_blank(value_string);
+                    key_value_map_[key_string] = value_string;
+//                    cout << "Key:" << key_string << "," << "Val:" << value_string << ";" << endl;
+                }
                 return result_string;
             } else {
                 db_stream_.seekg(key_index_map_[key] * (key_alignment_ + value_alignment_) + key_alignment_, ios::beg);
@@ -215,7 +214,7 @@ public:
         }
     }
 
-    inline void put(string &&key, string &&value) {
+    inline void put(string key, string value) {
         if (is_first_in_) {
             init_db_file(value);
             is_first_in_ = false;
