@@ -18,7 +18,7 @@ using namespace std;
 #define HASH_FUNC(x) str_hash_func_basic(x)
 constexpr char *FILE_NAME = "tuple_transaction.db";
 constexpr char *SEPERATOR_STRING = ",";
-constexpr int DEFAULT_HASH_TABLE_SLOT_SIZE = 80000;
+constexpr int DEFAULT_HASH_TABLE_SLOT_SIZE = 100000;
 
 std::hash<string> str_hash_func_basic;
 
@@ -45,7 +45,6 @@ private:
         }
         my_hash_table_ = std::move(my_hash_table_building);
     }
-
 
 public:
     yche_string_string_map() : my_hash_table_(slot_num) {}
@@ -111,8 +110,6 @@ public:
                 yche_map_.insert_or_replace(my_pair.first, my_pair.second);
             }
         }
-
-//        db_file_stream_.clear();
         //invalidate due to eof flag
         db_file_stream_.open(FILE_NAME, ios::out | ios::app | ios::binary);
     }

@@ -98,7 +98,6 @@ public:
             rebuild();
         }
     }
-
 };
 
 class Answer {
@@ -130,7 +129,10 @@ private:
             cache_max_size_ = 9500;
         }
         key_value_map_.reserve(cache_max_size_ * 1.3);
-        key_index_map_.reserve(100000);
+        if (value_alignment_ == MEDIUM_VALUE_ALIGNMENT)
+            key_index_map_.reserve(500000);
+        else
+            key_index_map_.reserve(100000);
     }
 
     inline void read_index_info() {
@@ -235,9 +237,9 @@ public:
         delete[]buffer_chars_;
     }
 
-    inline string get(string&& key) {
+    inline string get(string &&key) {
         if (key_index_map_.find(key) == nullptr) {
-            return "NULL";  
+            return "NULL";
         }
         else {
             auto value_ptr = key_value_map_.find(key);
@@ -253,7 +255,7 @@ public:
         }
     }
 
-    inline void put(string&& key, string&& value) {
+    inline void put(string &&key, string &&value) {
         if (is_first_in_) {
             init_db_file(value);
             is_first_in_ = false;
