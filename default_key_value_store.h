@@ -19,17 +19,17 @@
 #define MEDIUM_DB_NAME "medium.db"
 #define LARGE_DB_NAME "large.db"
 
-//#define SMALL_KEY_ALIGNMENT 70
-#define SMALL_KEY_ALIGNMENT 96
-//#define MEDIUM_KEY_ALIGNMENT 300
-#define MEDIUM_KEY_ALIGNMENT 584
-//#define LARGE_KEY_ALIGNMENT 3000
-#define LARGE_KEY_ALIGNMENT 3280
+#define SMALL_KEY_ALIGNMENT 70
+//#define SMALL_KEY_ALIGNMENT 96
+#define MEDIUM_KEY_ALIGNMENT 300
+//#define MEDIUM_KEY_ALIGNMENT 584
+#define LARGE_KEY_ALIGNMENT 3000
+//#define LARGE_KEY_ALIGNMENT 3280
 
 #define SMALL_VALUE_ALIGNMENT 160
 #define MEDIUM_VALUE_ALIGNMENT 3000
 #define LARGE_VALUE_ALIGNMENT 30000
-#define BUFFER_SIZE 1023
+#define BUFFER_SIZE 1024*1024
 
 using namespace std;
 
@@ -58,14 +58,15 @@ private:
         if (value_alignment_ == SMALL_VALUE_ALIGNMENT) {
             cache_max_size_ = 100000;
         } else if (value_alignment_ == MEDIUM_VALUE_ALIGNMENT) {
-            cache_max_size_ = 60000;
+            cache_max_size_ = 90000;
         } else {
-            cache_max_size_ = 6000;
+            cache_max_size_ = 9000;
         }
     }
 
     inline void set_block_buffer_size() {
-        block_size_ = BUFFER_SIZE / (key_alignment_ + value_alignment_);
+//        block_size_ = BUFFER_SIZE / (key_alignment_ + value_alignment_);
+        block_size_ = 30;
     }
 
     inline void read_index_info() {
@@ -105,9 +106,9 @@ private:
             }
         }
         if (is_first_in_ == false) {
-//            if (value_alignment_ == SMALL_VALUE_ALIGNMENT) {
-//                read_some_buffer_info();
-//            }
+            if (value_alignment_ == SMALL_VALUE_ALIGNMENT) {
+                read_some_buffer_info();
+            }
             set_cache_max_size();
             set_block_buffer_size();
         }
@@ -169,7 +170,6 @@ public:
     }
 
     virtual ~Answer() {
-        cout << "~Answer" << endl;
         delete[]buffer_chars_;
     }
 
@@ -184,7 +184,7 @@ public:
             if (key_index_map_.size() < cache_max_size_) {
                 auto cur_index = key_index_map_[key];
                 auto final_index = key_index_map_.size() - 1;
-                auto stop_index = cur_index + block_size_ > final_index ? final_index : cur_index + block_size_;
+                auto stop_index = cur_index + block_size_ - 1 > final_index ? final_index : cur_index + block_size_ - 1;
                 auto available_block_size = stop_index - cur_index + 1;
                 db_stream_.seekg(cur_index * (key_alignment_ + value_alignment_), ios::beg);
                 db_stream_.read(buffer_chars_, (key_alignment_ + value_alignment_) * available_block_size);
@@ -201,7 +201,6 @@ public:
                                    value_alignment_);
                     trim_right_blank(value_string);
                     key_value_map_[key_string] = value_string;
-//                    cout << "Key:" << key_string << "," << "Val:" << value_string << ";" << endl;
                 }
                 return result_string;
             } else {
