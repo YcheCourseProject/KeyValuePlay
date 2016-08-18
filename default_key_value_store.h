@@ -39,7 +39,7 @@ private:
 
     int key_alignment_{0};
     int value_alignment_{0};
-    int cache_max_size_{100000};
+    int cache_max_size_{1000};
     bool is_first_in_{false};
     char *value_chars_;
 
@@ -83,16 +83,19 @@ private:
             }
         }
         if (is_first_in_ == false)
-            read_some_buffer_info();
+//            read_some_buffer_info();
+        {
+            set_cache_max_size();
+        }
     }
 
     inline void set_cache_max_size() {
         if (value_alignment_ == SMALL_VALUE_ALIGNMENT) {
             cache_max_size_ = 100000;
         } else if (value_alignment_ == MEDIUM_VALUE_ALIGNMENT) {
-            cache_max_size_ = 5000;
+            cache_max_size_ = 60000;
         } else {
-            cache_max_size_ = 1000;
+            cache_max_size_ = 6000;
         }
     }
 
