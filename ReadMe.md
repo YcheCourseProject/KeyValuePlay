@@ -1,4 +1,7 @@
 #Key-Value Store
+##Final-Thinking
+
+
 ##Thinking
 - Use Boost Serialization to serialize/archive hash table, update from [Code](multiple_file_key_value_store.h)
 - Study I/O system call provided by linux

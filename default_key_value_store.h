@@ -172,9 +172,9 @@ private:
             }
         }
         if (is_first_in_ == false) {
-            if (value_alignment_ == SMALL_VALUE_ALIGNMENT) {
-                read_some_buffer_info();
-            }
+//            if (value_alignment_ == SMALL_VALUE_ALIGNMENT) {
+//                read_some_buffer_info();
+//            }
             set_cache_max_size();
         }
     }

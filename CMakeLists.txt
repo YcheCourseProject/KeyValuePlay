@@ -18,3 +18,6 @@ add_executable(string_stream_reverse traverse_directory/StringStreamReverseRead.
 add_executable(fstream_study traverse_directory/FstreamRWStudy.cpp)
 add_executable(string_Study traverse_directory/StringStudy.cpp)
 add_executable(convert_study traverse_directory/CharArrayConvertInt32.cpp)
+add_executable(test_async_io asio/test_async_io.cpp)
+target_link_libraries(test_async_io rt)
+add_executable(test_mmap asio/test_mmap.cpp)
