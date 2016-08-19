@@ -1,3 +1,6 @@
 [submodule "third_party/meta-serialization"]
 	path = third_party/meta-serialization
 	url = https://github.com/motonacciu/meta-serialization
+[submodule "third_party/radix_tree_c++"]
+	path = third_party/radix_tree_c++
+	url = https://github.com/ytakano/radix_tree
