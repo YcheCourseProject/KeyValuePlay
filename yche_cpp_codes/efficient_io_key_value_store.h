@@ -49,7 +49,7 @@ private:
 public:
     Answer() {
         key_index_info_map_.reserve(10000);
-        value_buffer = new char[1024 * 1024];
+        value_buffer = new char[1024 * 32];
         key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
         read_index_info();
@@ -64,13 +64,15 @@ public:
             return "NULL";
         }
         else {
-            if (key_value_map_.find(key) != key_value_map_.end())
+            if (key_value_map_.find(key) != key_value_map_.end()) {
                 return key_value_map_[key];
+            }
             db_stream_.seekg(key_index_info_map_[key].first, ios::beg);
             db_stream_.read(value_buffer, key_index_info_map_[key].second);
             string value(value_buffer, 0, key_index_info_map_[key].second);
-            if (count_ < 10000 && key_value_map_.find(key) != key_value_map_.end())
+            if (key_value_map_.size() < 4000 || key_value_map_.find(key) != key_value_map_.end()) {
                 key_value_map_[key] = value;
+            }
             return value;
         }
     }
@@ -84,12 +86,12 @@ public:
         key_index_info_map_[key] = make_pair(prefix_sum_index_, value_size);
         prefix_sum_index_ += value_size;
 
-        if (count_ < 10000 || key_value_map_.find(key) != key_value_map_.end()) {
-            key_value_map_[key] = value;
-            count_++;
-        }
         db_stream_.seekp(0, ios::end);
         db_stream_ << value << flush;
+
+        if (key_value_map_.size() < 4000 || key_value_map_.find(key) != key_value_map_.end()) {
+            key_value_map_[key] = value;
+        }
     }
 };
 
