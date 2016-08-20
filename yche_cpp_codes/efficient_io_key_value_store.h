@@ -20,10 +20,12 @@ using namespace std;
 class Answer {
 private:
     unordered_map<string, pair<int, int>> key_index_info_map_;
+    unordered_map<string, string> key_value_map_;
     fstream key_index_stream_;
     fstream db_stream_;
     int prefix_sum_index_{0};
     int length_{0};
+    int count_{0};
     char *value_buffer;
 
     inline void read_index_info() {
@@ -62,9 +64,14 @@ public:
             return "NULL";
         }
         else {
+            if (key_value_map_.find(key) != key_value_map_.end())
+                return key_value_map_[key];
             db_stream_.seekg(key_index_info_map_[key].first, ios::beg);
             db_stream_.read(value_buffer, key_index_info_map_[key].second);
-            return string(value_buffer, 0, key_index_info_map_[key].second);
+            string value(value_buffer, 0, key_index_info_map_[key].second);
+            if (count_ < 10000 && key_value_map_.find(key) != key_value_map_.end())
+                key_value_map_[key] = value;
+            return value;
         }
     }
 
@@ -77,6 +84,10 @@ public:
         key_index_info_map_[key] = make_pair(prefix_sum_index_, value_size);
         prefix_sum_index_ += value_size;
 
+        if (count_ < 10000 || key_value_map_.find(key) != key_value_map_.end()) {
+            key_value_map_[key] = value;
+            count_++;
+        }
         db_stream_.seekp(0, ios::end);
         db_stream_ << value << flush;
     }
