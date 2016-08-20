@@ -17,7 +17,7 @@
 
 using namespace std;
 
-#define HASH_FUNC(x) str_hash_func_basic(x)
+#define HASH_FUNC(x) hash_func(x)
 
 constexpr unsigned int DEFAULT_HASH_TABLE_SLOT_SIZE = 80000;
 constexpr double LOAD_FACTOR_THRESHOLD = 0.8;
@@ -108,7 +108,7 @@ int32_t ParseInt32(const char (&buf)[4]) {
     return val;
 }
 
-std::hash<string> str_hash_func_basic;
+std::hash<string> hash_func;
 
 template<size_t slot_num = DEFAULT_HASH_TABLE_SLOT_SIZE>
 class yche_string_string_map {

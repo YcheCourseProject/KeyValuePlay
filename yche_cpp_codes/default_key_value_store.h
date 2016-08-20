@@ -29,12 +29,12 @@
 #define LARGE_VALUE_ALIGNMENT 30000
 #define BUFFER_SIZE 1024*1024
 
-#define HASH_FUNC(x) str_hash_func_basic(x)
+#define HASH_FUNC(x) hash_func(x)
 #define DEFAULT_HASH_SLOT_SIZE 10000
 
 using namespace std;
 
-std::hash<string> str_hash_func_basic;
+std::hash<string> hash_func;
 
 template<typename T>
 class yche_map {
@@ -102,7 +102,7 @@ public:
 
 class Answer {
 private:
-    yche_map<int> key_index_map_;
+    yche_map<int> key_index_info_map_;
     yche_map<string> key_value_map_;
     fstream key_index_stream_;
     fstream db_stream_;
@@ -130,9 +130,9 @@ private:
         }
         key_value_map_.reserve(cache_max_size_ * 1.3);
         if (value_alignment_ == MEDIUM_VALUE_ALIGNMENT)
-            key_index_map_.reserve(500000);
+            key_index_info_map_.reserve(500000);
         else
-            key_index_map_.reserve(100000);
+            key_index_info_map_.reserve(100000);
     }
 
     inline void read_index_info() {
@@ -142,7 +142,7 @@ private:
             getline(key_index_stream_, key_str);
             if (key_index_stream_.good()) {
                 getline(key_index_stream_, index_str);
-                key_index_map_.insert_or_replace(key_str, stoi(index_str));
+                key_index_info_map_.insert_or_replace(key_str, stoi(index_str));
                 db_file_index_++;
             }
         }
@@ -238,7 +238,7 @@ public:
     }
 
     inline string get(string &&key) {
-        if (key_index_map_.find(key) == nullptr) {
+        if (key_index_info_map_.find(key) == nullptr) {
             return "NULL";
         }
         else {
@@ -246,7 +246,7 @@ public:
             if (value_ptr != nullptr) {
                 return *value_ptr;
             }
-            db_stream_.seekg(*key_index_map_.find(key) * (key_alignment_ + value_alignment_) + key_alignment_,
+            db_stream_.seekg(*key_index_info_map_.find(key) * (key_alignment_ + value_alignment_) + key_alignment_,
                              ios::beg);
             db_stream_.read(buffer_chars_, value_alignment_);
             string result_string(buffer_chars_, 0, value_alignment_);
@@ -260,13 +260,13 @@ public:
             init_db_file(value);
             is_first_in_ = false;
         }
-        if (key_index_map_.find(key) == nullptr) {
+        if (key_index_info_map_.find(key) == nullptr) {
             key_index_stream_ << key << "\n" << to_string(db_file_index_) << "\n" << flush;
-            key_index_map_.insert_or_replace(key, db_file_index_);
+            key_index_info_map_.insert_or_replace(key, db_file_index_);
             db_file_index_++;
             db_stream_.seekp(0, ios::end);
         } else {
-            db_stream_.seekp(*key_index_map_.find(key) * (key_alignment_ + value_alignment_), ios::beg);
+            db_stream_.seekp(*key_index_info_map_.find(key) * (key_alignment_ + value_alignment_), ios::beg);
         }
         db_stream_ << left << setw(key_alignment_) << key << left << setw(value_alignment_) << value << flush;
         if (key_value_map_.size() < cache_max_size_ || key_value_map_.find(key) != nullptr)

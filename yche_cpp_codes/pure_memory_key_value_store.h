@@ -15,12 +15,12 @@
 
 using namespace std;
 
-#define HASH_FUNC(x) str_hash_func_basic(x)
+#define HASH_FUNC(x) hash_func(x)
 constexpr char *FILE_NAME = "tuple_transaction.db";
 constexpr char *SEPERATOR_STRING = ",";
 constexpr int DEFAULT_HASH_TABLE_SLOT_SIZE = 100000;
 
-std::hash<string> str_hash_func_basic;
+std::hash<string> hash_func;
 
 template<size_t slot_num = DEFAULT_HASH_TABLE_SLOT_SIZE>
 class yche_string_string_map {

@@ -5,8 +5,10 @@ add_executable(file_study file_study/TraverseDir.cpp)
 add_executable(string_stream_study file_study/StringStream.cpp)
 add_executable(string_stream_reverse file_study/StringStreamReverseRead.cpp)
 add_executable(fstream_study file_study/FstreamRWStudy.cpp)
-add_executable(string_Study file_study/StringStudy.cpp)
-add_executable(convert_study file_study/CharArrayConvertInt32.cpp)
+
+add_executable(string_Study string_study/StringStudy.cpp)
+add_executable(convert_study string_study/CharArrayConvertInt32.cpp)
+
 add_executable(test_async_io async_and_mmap_study/test_async_io.cpp)
 target_link_libraries(test_async_io rt)
 add_executable(test_mmap async_and_mmap_study/test_mmap.cpp)

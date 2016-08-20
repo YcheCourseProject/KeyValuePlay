@@ -15,7 +15,7 @@
 
 using namespace std;
 
-#define HASH_FUNC(x) str_hash_func_basic(x)
+#define HASH_FUNC(x) hash_func(x)
 #define DB_FILE_NUM 1000
 
 //template<typename _Tp, typename... _Args>
@@ -23,7 +23,7 @@ using namespace std;
 //    return unique_ptr<_Tp>(new _Tp(std::forward<_Args>(__args)...));
 //}
 
-std::hash<string> str_hash_func_basic;
+std::hash<string> hash_func;
 
 inline size_t get_hash_file_index(const string &to_persistent_string) {
     return HASH_FUNC(to_persistent_string) % DB_FILE_NUM;
