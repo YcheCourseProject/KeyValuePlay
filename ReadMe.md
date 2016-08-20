@@ -1,5 +1,7 @@
 #Key-Value Store
 ##Final-Thinking
+- MMap Usage
+- Faster HashTable Impl
 
 ##Thinking
 - Use Boost Serialization to serialize/archive hash table, update from [Code](multiple_file_key_value_store.h)

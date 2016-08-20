@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <string>
 #include <fstream>
+#include "zlib.h"
 
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
@@ -87,9 +88,6 @@ public:
             db_stream_.seekg(index_pair.first, ios::beg);
             db_stream_.read(value_buffer, index_pair.second);
             string value(value_buffer, 0, index_pair.second);
-            if (key_value_map_.size() < max_cache_size_ || key_value_map_.find(key) != key_value_map_.end()) {
-                key_value_map_[key] = value;
-            }
             return value;
         }
     }
