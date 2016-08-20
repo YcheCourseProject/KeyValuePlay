@@ -25,7 +25,6 @@ private:
     fstream db_stream_;
     int prefix_sum_index_{0};
     int length_{0};
-    int count_{0};
     char *value_buffer;
 
     inline void read_index_info() {
