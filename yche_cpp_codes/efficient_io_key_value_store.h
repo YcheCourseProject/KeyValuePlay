@@ -8,9 +8,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <string>
-#include <iostream>
 #include <fstream>
-#include <cstring>
 
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
@@ -25,7 +23,10 @@ private:
     fstream db_stream_;
     int prefix_sum_index_{0};
     int length_{0};
+    int max_cache_size_{0};
     char *value_buffer;
+    bool is_first_in_{true};
+    bool is_small_{false};
 
     inline void read_index_info() {
         string key_str;
@@ -38,16 +39,31 @@ private:
                 getline(key_index_stream_, length_str);
                 prefix_sum_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
+                if (is_first_in_) {
+                    is_small_ = length_ < 500 ? true : false;
+                    max_cache_size_ = length_ > 5000 ? 4000 : 125000;
+                    is_first_in_ = false;
+                }
                 key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
             }
         }
         prefix_sum_index_ = prefix_sum_index_ + length_;
         key_index_stream_.clear();
+        if (is_small_) {
+            for (auto &my_pair:key_index_info_map_) {
+                auto &index_pair = my_pair.second;
+                db_stream_.seekg(index_pair.first, ios::beg);
+                db_stream_.read(value_buffer, index_pair.second);
+                string value(value_buffer, 0, index_pair.second);
+                key_value_map_[my_pair.first] = value;
+            }
+        }
     }
 
 public:
     Answer() {
         key_index_info_map_.reserve(10000);
+        key_value_map_.reserve(4000);
         value_buffer = new char[1024 * 32];
         key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
@@ -63,13 +79,15 @@ public:
             return "NULL";
         }
         else {
-            if (key_value_map_.find(key) != key_value_map_.end()) {
-                return key_value_map_[key];
+            auto iter = key_value_map_.find(key);
+            if (iter != key_value_map_.end()) {
+                return iter->second;
             }
-            db_stream_.seekg(key_index_info_map_[key].first, ios::beg);
-            db_stream_.read(value_buffer, key_index_info_map_[key].second);
-            string value(value_buffer, 0, key_index_info_map_[key].second);
-            if (key_value_map_.size() < 4000 || key_value_map_.find(key) != key_value_map_.end()) {
+            auto &index_pair = key_index_info_map_[key];
+            db_stream_.seekg(index_pair.first, ios::beg);
+            db_stream_.read(value_buffer, index_pair.second);
+            string value(value_buffer, 0, index_pair.second);
+            if (key_value_map_.size() < max_cache_size_ || key_value_map_.find(key) != key_value_map_.end()) {
                 key_value_map_[key] = value;
             }
             return value;
@@ -77,6 +95,10 @@ public:
     }
 
     inline void put(string key, string value) {
+        if (is_first_in_) {
+            max_cache_size_ = value.size() > 5000 ? 4000 : 125000;
+            is_first_in_ = false;
+        }
         auto value_size = value.size();
         key_index_stream_ << key << "\n";
         key_index_stream_ << prefix_sum_index_ << "\n";
@@ -88,7 +110,7 @@ public:
         db_stream_.seekp(0, ios::end);
         db_stream_ << value << flush;
 
-        if (key_value_map_.size() < 4000 || key_value_map_.find(key) != key_value_map_.end()) {
+        if (key_value_map_.size() < max_cache_size_ || key_value_map_.find(key) != key_value_map_.end()) {
             key_value_map_[key] = value;
         }
     }
