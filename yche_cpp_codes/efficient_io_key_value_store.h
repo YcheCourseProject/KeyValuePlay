@@ -19,23 +19,12 @@ using namespace std;
 
 class Answer {
 private:
-    unordered_map<string, pair<uint32_t, uint32_t>> key_index_info_map_;
+    unordered_map<string, pair<int, int>> key_index_info_map_;
     fstream key_index_stream_;
     fstream db_stream_;
-    uint32_t prefix_sum_index_{0};
-    uint32_t length_{0};
-    char *transfer_buffer;
+    int prefix_sum_index_{0};
+    int length_{0};
     char *value_buffer;
-
-    void serialize_integer(char *buf, uint32_t val) {
-        memcpy(buf, &val, 4);
-    }
-
-    int32_t parse_integer(const char *buf) {
-        uint32_t val;
-        memcpy(&val, buf, 4);
-        return val;
-    }
 
     inline void read_index_info() {
         string key_str;
@@ -46,16 +35,18 @@ private:
             if (key_index_stream_.good()) {
                 getline(key_index_stream_, prefix_sum_index_str);
                 getline(key_index_stream_, length_str);
-                key_index_info_map_[key_str] = make_pair(parse_integer(prefix_sum_index_str.c_str()),
-                                                         parse_integer(length_str.c_str()));
+                prefix_sum_index_ = stoi(prefix_sum_index_str);
+                length_ = stoi(length_str);
+                key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
             }
         }
+        prefix_sum_index_ = prefix_sum_index_ + length_;
         key_index_stream_.clear();
     }
 
 public:
     Answer() {
-        transfer_buffer = new char[4];
+        key_index_info_map_.reserve(10000);
         value_buffer = new char[1024 * 1024];
         key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
@@ -63,7 +54,6 @@ public:
     }
 
     virtual ~Answer() {
-        delete[]transfer_buffer;
         delete[] value_buffer;
     }
 
@@ -81,10 +71,8 @@ public:
     inline void put(string key, string value) {
         auto value_size = value.size();
         key_index_stream_ << key << "\n";
-        serialize_integer(transfer_buffer, prefix_sum_index_);
-        key_index_stream_ << string(transfer_buffer, 0, 4) << "\n";
-        serialize_integer(transfer_buffer, value_size);
-        key_index_stream_ << string(transfer_buffer, 0, 4) << "\n" << flush;
+        key_index_stream_ << prefix_sum_index_ << "\n";
+        key_index_stream_ << value_size << "\n" << flush;
 
         key_index_info_map_[key] = make_pair(prefix_sum_index_, value_size);
         prefix_sum_index_ += value_size;
@@ -93,6 +81,5 @@ public:
         db_stream_ << value << flush;
     }
 };
-
 
 #endif //KEYVALUESTORE_EFFICIENT_IO_KEY_VALUE_STORE_H
