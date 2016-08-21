@@ -60,7 +60,7 @@ private:
         for (auto i = 0; i < 90000; ++i) {
             if (key_index_mmap_[i * 77 + 76] == '\n') {
                 key_count_++;
-                key_str = string(key_index_mmap_, i * 77, 70);
+                key_str = string(key_index_mmap_ + i * 77, 0, 70);
                 trim_right_blank(key_str);
                 prefix_sum_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
                 length_ = deserialize<uint16_t>(key_index_mmap_ + i * 77 + 74);
@@ -102,26 +102,27 @@ public:
         }
         else {
             auto &index_pair = key_index_info_map_[key];
-            return string(db_value_mmap_, index_pair.first, index_pair.second);
+            return string(db_value_mmap_ + index_pair.first, 0, index_pair.second);
         }
     }
 
     inline void put(string key, string value) {
         length_ = static_cast<uint16_t >(value.size());
-
         key_index_info_map_[key] = make_pair(prefix_sum_index_, length_);
-        prefix_sum_index_ += length_;
 
+//        memset(key_index_mmap_ + key_count_ * 77, ' ', 77);
         memcpy(key_index_mmap_ + key_count_ * 77, key.c_str(), key.size());
         serialize(serialization_buf_, prefix_sum_index_);
         memcpy(key_index_mmap_ + key_count_ * 77 + 70, serialization_buf_, 4);
         serialize(serialization_buf_, length_);
         memcpy(key_index_mmap_ + key_count_ * 77 + 74, serialization_buf_, 2);
-
+        key_index_mmap_[key_count_ * 77 + 76] = '\n';
         memcpy(db_value_mmap_ + prefix_sum_index_, value.c_str(), length_);
 
-        msync(key_index_mmap_ + key_count_ * 77, 77, MS_SYNC);
-        msync(db_value_mmap_ + prefix_sum_index_, length_, MS_SYNC);
+        msync(key_index_mmap_ + key_count_ * 77, 77, MS_ASYNC);
+        msync(db_value_mmap_ + prefix_sum_index_, length_, MS_ASYNC);
+
+        prefix_sum_index_ += length_;
         key_count_++;
     }
 };
