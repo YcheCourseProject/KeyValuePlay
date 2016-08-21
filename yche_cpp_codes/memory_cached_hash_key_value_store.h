@@ -111,7 +111,7 @@ int32_t ParseInt32(const char (&buf)[4]) {
 std::hash<string> hash_func;
 
 template<size_t slot_num = DEFAULT_HASH_TABLE_SLOT_SIZE>
-class yche_string_string_map {
+class yche_map {
 private:
     vector<pair<string, string>> my_hash_table_;
     string value_result_string_;
@@ -195,9 +195,9 @@ public:
     char index_chars_array_[4];
     vector<int32_t> index_array_;
 
-    yche_string_string_map() : my_hash_table_(slot_num) {}
+    yche_map() : my_hash_table_(slot_num) {}
 
-    virtual ~yche_string_string_map() {
+    virtual ~yche_map() {
         delete[]read_buffer_;
     }
 
@@ -285,7 +285,7 @@ public:
 
 class Answer {
 private:
-    yche_string_string_map<> yche_map_;
+    yche_map<> yche_map_;
     bool is_file_exists_{false};
     fstream db_file_stream_;
     fstream index_file_stream_;

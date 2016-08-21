@@ -30,7 +30,7 @@ int main() {
         cout << naive_store.get(to_string(i)) << endl;
     }
 //    cout << "Hi" << endl;
-//    yche_string_string_map<4> hello_map;
+//    yche_map<4> hello_map;
 //    for (auto i = 0; i < 3; i++) {
 //        cout << "add:" << i << endl;
 //        hello_map.insert_or_replace(to_string(i), to_string(i + 1));

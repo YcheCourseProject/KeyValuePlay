@@ -40,7 +40,7 @@ struct SerializationInfo {
     vector<PairInfo> pair_info_vec_;
 };
 
-class yche_string_string_map {
+class yche_map {
 private:
     vector<pair<string, string>> my_hash_table_;
     size_t current_size_{0};
@@ -64,9 +64,9 @@ private:
     }
 
 public:
-    yche_string_string_map() = default;
+    yche_map() = default;
 
-    yche_string_string_map(size_t slot_num) : my_hash_table_(slot_num) {}
+    yche_map(size_t slot_num) : my_hash_table_(slot_num) {}
 
     void reset_info(SerializationInfo &serialization_info) {
         my_hash_table_.resize(serialization_info.slot_size_);
@@ -119,7 +119,7 @@ public:
 class Answer {
 private:
     array<unique_ptr<fstream>, DB_FILE_NUM> db_file_array_;
-    yche_string_string_map yche_map_;
+    yche_map yche_map_;
     SerializationInfo serialization_info_;
 
 public:
