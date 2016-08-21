@@ -81,7 +81,7 @@ public:
         }
         else {
             if (is_small_) {
-                
+
             }
             auto iter = key_value_map_.find(key);
             if (iter != key_value_map_.end()) {
