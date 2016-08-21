@@ -2,6 +2,7 @@
 // Created by cheyulin on 8/20/16.
 //
 #include "efficient_io_key_value_store.h"
+#include <iostream>
 
 void basic_test() {
     Answer advanced_store;

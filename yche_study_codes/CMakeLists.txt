@@ -12,6 +12,8 @@ add_executable(convert_study string_study/CharArrayConvertInt32.cpp)
 add_executable(test_async_io async_and_mmap_study/test_async_io.cpp)
 target_link_libraries(test_async_io rt)
 add_executable(test_mmap async_and_mmap_study/test_mmap.cpp)
+add_executable(test_mmap_rw async_and_mmap_study/test_mmap_rw_file.cpp)
 
 add_executable(string_compression_zlib string_compression/zlib_study.cpp)
 target_link_libraries(string_compression_zlib z)
+
