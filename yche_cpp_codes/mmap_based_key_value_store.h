@@ -18,6 +18,7 @@
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
 #define SMALL_INDEX_LENGTH 90000*77
+#define SMALL_DB_LENGTH 90000*160
 
 using namespace std;
 
@@ -43,7 +44,10 @@ private:
     unordered_map<string, pair<uint32_t, uint16_t >> key_index_info_map_;
     char *key_index_mmap_;
     char *db_value_mmap_;
+    char *serialization_buf_;
     int key_index_file_descriptor_;
+    int db_file_descriptor_;
+    int key_count_{0};
     uint32_t prefix_sum_index_{0};
     uint16_t length_{0};
 
@@ -55,11 +59,12 @@ private:
         string key_str;
         for (auto i = 0; i < 90000; ++i) {
             if (key_index_mmap_[i * 77 + 76] == '\n') {
+                key_count_++;
                 key_str = string(key_index_mmap_, i * 77, 70);
                 trim_right_blank(key_str);
                 prefix_sum_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
                 length_ = deserialize<uint16_t>(key_index_mmap_ + i * 77 + 74);
-                key_index_info_map_[key_str] = make_pair(index, length_);
+                key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
             } else {
                 break;
             }
@@ -68,19 +73,27 @@ private:
     }
 
     inline void read_db_info() {
-
+        db_file_descriptor_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
+        ftruncate(db_file_descriptor_, SMALL_DB_LENGTH);
+        db_value_mmap_ = (char *) mmap(0, SMALL_DB_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED,
+                                       db_file_descriptor_, 0);
+        auto ch = db_value_mmap_[0];
     }
 
 public:
     Answer() {
+        serialization_buf_ = new char[4];
         key_index_info_map_.reserve(18000);
         read_index_info();
         read_db_info();
     }
 
     virtual ~Answer() {
+        delete[]serialization_buf_;
         munmap(key_index_mmap_, SMALL_INDEX_LENGTH);
         close(key_index_file_descriptor_);
+        munmap(db_value_mmap_, SMALL_DB_LENGTH);
+        close(db_file_descriptor_);
     }
 
     inline string get(string key) {
@@ -89,15 +102,27 @@ public:
         }
         else {
             auto &index_pair = key_index_info_map_[key];
-            return string();
+            return string(db_value_mmap_, index_pair.first, index_pair.second);
         }
     }
 
     inline void put(string key, string value) {
-        auto value_size = value.size();
+        length_ = static_cast<uint16_t >(value.size());
 
-        key_index_info_map_[key] = make_pair(prefix_sum_index_, value_size);
-        prefix_sum_index_ += value_size;
+        key_index_info_map_[key] = make_pair(prefix_sum_index_, length_);
+        prefix_sum_index_ += length_;
+
+        memcpy(key_index_mmap_ + key_count_ * 77, key.c_str(), key.size());
+        serialize(serialization_buf_, prefix_sum_index_);
+        memcpy(key_index_mmap_ + key_count_ * 77 + 70, serialization_buf_, 4);
+        serialize(serialization_buf_, length_);
+        memcpy(key_index_mmap_ + key_count_ * 77 + 74, serialization_buf_, 2);
+
+        memcpy(db_value_mmap_ + prefix_sum_index_, value.c_str(), length_);
+
+        msync(key_index_mmap_ + key_count_ * 77, 77, MS_SYNC);
+        msync(db_value_mmap_ + prefix_sum_index_, length_, MS_SYNC);
+        key_count_++;
     }
 };
 
