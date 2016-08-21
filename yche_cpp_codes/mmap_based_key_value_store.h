@@ -106,20 +106,23 @@ public:
     }
 
     inline void put(string key, string value) {
-        length_ = static_cast<uint16_t >(value.size());
+        length_ = value.size();
         key_index_info_map_[key] = make_pair(prefix_sum_index_, length_);
 
-//        memset(key_index_mmap_ + key_count_ * 77, ' ', 77);
-        memcpy(key_index_mmap_ + key_count_ * 77, key.c_str(), key.size());
+        char *ptr = key_index_mmap_ + key_count_ * 77;
+        memcpy(ptr, key.c_str(), key.size());
         serialize(serialization_buf_, prefix_sum_index_);
-        memcpy(key_index_mmap_ + key_count_ * 77 + 70, serialization_buf_, 4);
+        ptr += 70;
+        memcpy(ptr, serialization_buf_, 4);
         serialize(serialization_buf_, length_);
-        memcpy(key_index_mmap_ + key_count_ * 77 + 74, serialization_buf_, 2);
-        key_index_mmap_[key_count_ * 77 + 76] = '\n';
+        ptr += 4;
+        memcpy(ptr, serialization_buf_, 2);
+        ptr += 2;
+        *ptr = '\n';
         memcpy(db_value_mmap_ + prefix_sum_index_, value.c_str(), length_);
 
-        msync(key_index_mmap_ + key_count_ * 77, 77, MS_ASYNC);
-        msync(db_value_mmap_ + prefix_sum_index_, length_, MS_ASYNC);
+//        msync(key_index_mmap_ + key_count_ * 77, 77, MS_ASYNC);
+//        msync(db_value_mmap_ + prefix_sum_index_, length_, MS_ASYNC);
 
         prefix_sum_index_ += length_;
         key_count_++;
