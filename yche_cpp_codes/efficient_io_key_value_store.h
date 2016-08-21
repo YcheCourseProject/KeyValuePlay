@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <string>
 #include <fstream>
-#include "zlib.h"
 
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
@@ -43,6 +42,8 @@ private:
                 if (is_first_in_) {
                     is_small_ = length_ < 500 ? true : false;
                     max_cache_size_ = length_ > 5000 ? 4000 : 125000;
+                    if (length_ > 500 && length_ < 5000)
+                        key_index_info_map_.reserve(1000000);
                     is_first_in_ = false;
                 }
                 key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
@@ -63,8 +64,8 @@ private:
 
 public:
     Answer() {
-        key_index_info_map_.reserve(10000);
-        key_value_map_.reserve(4000);
+        key_index_info_map_.reserve(20000);
+        key_value_map_.reserve(20000);
         value_buffer = new char[1024 * 32];
         key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
@@ -87,8 +88,7 @@ public:
             auto &index_pair = key_index_info_map_[key];
             db_stream_.seekg(index_pair.first, ios::beg);
             db_stream_.read(value_buffer, index_pair.second);
-            string value(value_buffer, 0, index_pair.second);
-            return value;
+            return string(value_buffer, 0, index_pair.second);
         }
     }
 
@@ -102,11 +102,11 @@ public:
         key_index_stream_ << prefix_sum_index_ << "\n";
         key_index_stream_ << value_size << "\n" << flush;
 
-        key_index_info_map_[key] = make_pair(prefix_sum_index_, value_size);
-        prefix_sum_index_ += value_size;
-
         db_stream_.seekp(0, ios::end);
         db_stream_ << value << flush;
+
+        key_index_info_map_[key] = make_pair(prefix_sum_index_, value_size);
+        prefix_sum_index_ += value_size;
 
         if (key_value_map_.size() < max_cache_size_ || key_value_map_.find(key) != key_value_map_.end()) {
             key_value_map_[key] = value;

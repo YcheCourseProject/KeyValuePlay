@@ -54,7 +54,7 @@ enum class HashFileSlotSize {
 enum class HashInMemoryMaxSize {
     small = 100000,
     medium = 90000,
-    large = 9000
+    large = 4000
 };
 
 enum class DataSetType {
@@ -201,7 +201,7 @@ public:
         delete[]read_buffer_;
     }
 
-    void inline resize(size_t size){
+    void inline resize(size_t size) {
         my_hash_table_.resize(size);
     }
 
@@ -289,7 +289,6 @@ private:
     bool is_file_exists_{false};
     fstream db_file_stream_;
     fstream index_file_stream_;
-    size_t count{0};
     DataSetAlignmentInfo *data_set_alignment_info_ptr_{nullptr};
 
     void inline create_db_file(string filename) {
@@ -377,11 +376,8 @@ public:
             }
         }
         yche_map_.insert_or_replace(key, value);
-        ++count;
-        if (count % 9 == 1 || count % 9 == 3 || count % 9 == 5 || count % 9 == 7) {
-            db_file_stream_ << flush;
-            index_file_stream_ << flush;
-        }
+        db_file_stream_ << flush;
+        index_file_stream_ << flush;
     }
 };
 
