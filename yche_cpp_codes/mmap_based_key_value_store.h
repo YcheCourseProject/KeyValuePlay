@@ -44,6 +44,7 @@ private:
     unordered_map<string, pair<uint32_t, uint16_t >> key_index_info_map_;
     char *key_index_mmap_;
     char *db_value_mmap_;
+    char *db_value_buf_;
     char *serialization_buf_;
     int key_index_file_descriptor_;
     int db_file_descriptor_;
@@ -77,11 +78,13 @@ private:
         ftruncate(db_file_descriptor_, SMALL_DB_LENGTH);
         db_value_mmap_ = (char *) mmap(0, SMALL_DB_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED,
                                        db_file_descriptor_, 0);
+        memcpy(db_value_buf_, db_value_mmap_, 90000 * 160);
     }
 
 public:
     Answer() {
         serialization_buf_ = new char[4];
+        db_value_buf_ = new char[90000 * 160];
         key_index_info_map_.reserve(18000);
         read_index_info();
         read_db_info();
@@ -101,7 +104,8 @@ public:
         }
         else {
             auto &index_pair = key_index_info_map_[key];
-            return string(db_value_mmap_ + index_pair.first, 0, index_pair.second);
+            string res_string = string(db_value_buf_ + index_pair.first, 0, index_pair.second);
+            return res_string;
         }
     }
 
@@ -112,14 +116,12 @@ public:
         char *ptr = key_index_mmap_ + key_count_ * 77;
         memcpy(ptr, key.c_str(), key.size());
         serialize(serialization_buf_, prefix_sum_index_);
-        ptr += 70;
-        memcpy(ptr, serialization_buf_, 4);
+        memcpy(ptr+70, serialization_buf_, 4);
         serialize(serialization_buf_, length_);
-        ptr += 4;
-        memcpy(ptr, serialization_buf_, 2);
-        ptr += 2;
-        *ptr = '\n';
+        memcpy(ptr+74, serialization_buf_, 2);
+        ptr[76] = '\n';
         memcpy(db_value_mmap_ + prefix_sum_index_, value.c_str(), length_);
+        memcpy(db_value_buf_ + prefix_sum_index_, value.c_str(), length_);
 
 //        msync(key_index_mmap_ + key_count_ * 77, 77, MS_ASYNC);
 //        msync(db_value_mmap_ + prefix_sum_index_, length_, MS_ASYNC);
