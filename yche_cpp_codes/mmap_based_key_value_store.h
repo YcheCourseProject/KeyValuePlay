@@ -124,7 +124,6 @@ public:
         ptr[76] = '\n';
         memcpy(db_value_mmap_ + prefix_sum_index_, value.c_str(), length_);
         memcpy(db_value_buf_ + prefix_sum_index_, value.c_str(), length_);
-
 //        msync(key_index_mmap_ + key_count_ * 77, 77, MS_ASYNC);
 //        msync(db_value_mmap_ + prefix_sum_index_, length_, MS_ASYNC);
 

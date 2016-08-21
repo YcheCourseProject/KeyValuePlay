@@ -25,6 +25,7 @@ private:
     int length_{0};
     int max_cache_size_{0};
     char *value_buffer;
+    char *small_data_buffer_;
     bool is_first_in_{true};
     bool is_small_{false};
 
@@ -52,13 +53,11 @@ private:
         prefix_sum_index_ = prefix_sum_index_ + length_;
         key_index_stream_.clear();
         if (is_small_) {
-            for (auto &my_pair:key_index_info_map_) {
-                auto &index_pair = my_pair.second;
-                db_stream_.seekg(index_pair.first, ios::beg);
-                db_stream_.read(value_buffer, index_pair.second);
-                string value(value_buffer, 0, index_pair.second);
-                key_value_map_[my_pair.first] = std::move(value);
-            }
+            small_data_buffer_ = new char[90000 * 160];
+            db_stream_.seekg(0, ios::end);
+            auto length = db_stream_.tellg();
+            db_stream_.seekg(0, ios::beg);
+            db_stream_.read(small_data_buffer_, length);
         }
     }
 
@@ -81,6 +80,9 @@ public:
             return "NULL";
         }
         else {
+            if (is_small_) {
+                
+            }
             auto iter = key_value_map_.find(key);
             if (iter != key_value_map_.end()) {
                 return iter->second;
