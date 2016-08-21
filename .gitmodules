@@ -4,3 +4,6 @@
 [submodule "third_party/radix_tree_c++"]
 	path = third_party/radix_tree_c++
 	url = https://github.com/ytakano/radix_tree
+[submodule "third_party/libb64-git"]
+	path = third_party/libb64-git
+	url = git://git.code.sf.net/p/libb64/git
