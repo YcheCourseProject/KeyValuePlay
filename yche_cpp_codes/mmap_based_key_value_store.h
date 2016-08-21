@@ -77,7 +77,6 @@ private:
         ftruncate(db_file_descriptor_, SMALL_DB_LENGTH);
         db_value_mmap_ = (char *) mmap(0, SMALL_DB_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED,
                                        db_file_descriptor_, 0);
-        auto ch = db_value_mmap_[0];
     }
 
 public:
