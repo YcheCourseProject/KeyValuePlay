@@ -2,6 +2,8 @@
 ##Final-Thinking
 - MMap Usage
 - Faster HashTable Impl
+- SIMD For HashTable
+- [Target](Target.md) 
 
 ##Thinking
 - Use Boost Serialization to serialize/archive hash table, update from [Code](multiple_file_key_value_store.h)
