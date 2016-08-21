@@ -87,7 +87,7 @@ public:
 
 class Answer {
 private:
-    yche_string_string_map<90000> yche_map_;
+    yche_string_string_map<200000> yche_map_;
     fstream db_file_stream_;
     size_t count{0};
 

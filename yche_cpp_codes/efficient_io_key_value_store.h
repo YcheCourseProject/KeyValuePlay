@@ -65,7 +65,7 @@ private:
 public:
     Answer() {
         key_index_info_map_.reserve(20000);
-        key_value_map_.reserve(20000);
+        key_value_map_.reserve(200000);
         value_buffer = new char[1024 * 32];
         key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
