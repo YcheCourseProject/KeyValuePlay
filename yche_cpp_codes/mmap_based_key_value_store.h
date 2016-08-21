@@ -5,73 +5,82 @@
 #ifndef KEYVALUESTORE_MMAP_BASED_KEY_VALUE_STORE_H
 #define KEYVALUESTORE_MMAP_BASED_KEY_VALUE_STORE_H
 
-
 #include <unordered_map>
 #include <algorithm>
 #include <string>
-#include <fstream>
+#include <cstring>
+
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
+#define SMALL_INDEX_LENGTH 90000*77
 
 using namespace std;
 
+template<typename T>
+void serialize(char *buffer, T integer) {
+    memcpy(buffer, &integer, sizeof(T));
+}
+
+template<typename T>
+T deserialize(char *buffer) {
+    T integer;
+    memcpy(&integer, buffer, sizeof(T));
+}
+
+void trim_right_blank(string &to_trim_string) {
+    auto iter_back = std::find_if_not(to_trim_string.rbegin(), to_trim_string.rend(),
+                                      [](int c) { return std::isspace(c); }).base();
+    to_trim_string = std::string(to_trim_string.begin(), iter_back);
+}
+
 class Answer {
 private:
-    unordered_map<string, pair<int, int>> key_index_info_map_;
-    fstream key_index_stream_;
-    fstream db_stream_;
-    int prefix_sum_index_{0};
-    int length_{0};
-    int max_cache_size_{0};
-    char *value_buffer;
-    bool is_first_in_{true};
-    bool is_small_{false};
+    unordered_map<string, pair<uint32_t, uint16_t >> key_index_info_map_;
+    char *key_index_mmap_;
+    char *db_value_mmap_;
+    int key_index_file_descriptor_;
+    uint32_t prefix_sum_index_{0};
+    uint16_t length_{0};
 
     inline void read_index_info() {
+        key_index_file_descriptor_ = open(INDEX_FILE_NAME, O_RDWR | O_CREAT, 0600);
+        ftruncate(key_index_file_descriptor_, SMALL_INDEX_LENGTH);
+        key_index_mmap_ = (char *) mmap(0, SMALL_INDEX_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED,
+                                        key_index_file_descriptor_, 0);
         string key_str;
-        string prefix_sum_index_str;
-        string length_str;
-        for (; key_index_stream_.good();) {
-            getline(key_index_stream_, key_str);
-            if (key_index_stream_.good()) {
-                getline(key_index_stream_, prefix_sum_index_str);
-                getline(key_index_stream_, length_str);
-                prefix_sum_index_ = stoi(prefix_sum_index_str);
-                length_ = stoi(length_str);
-                if (is_first_in_) {
-                    is_small_ = length_ < 500 ? true : false;
-                    max_cache_size_ = length_ > 5000 ? 4000 : 125000;
-                    if (length_ > 500 && length_ < 5000)
-                        key_index_info_map_.reserve(1000000);
-                    is_first_in_ = false;
-                }
-                key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
+        for (auto i = 0; i < 90000; ++i) {
+            if (key_index_mmap_[i * 77 + 76] == '\n') {
+                key_str = string(key_index_mmap_, i * 77, 70);
+                trim_right_blank(key_str);
+                prefix_sum_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
+                length_ = deserialize<uint16_t>(key_index_mmap_ + i * 77 + 74);
+                key_index_info_map_[key_str] = make_pair(index, length_);
+            } else {
+                break;
             }
         }
         prefix_sum_index_ = prefix_sum_index_ + length_;
-        key_index_stream_.clear();
-        if (is_small_) {
-            for (auto &my_pair:key_index_info_map_) {
-                auto &index_pair = my_pair.second;
-                db_stream_.seekg(index_pair.first, ios::beg);
-                db_stream_.read(value_buffer, index_pair.second);
-                string value(value_buffer, 0, index_pair.second);
-            }
-        }
+    }
+
+    inline void read_db_info() {
+
     }
 
 public:
     Answer() {
-        key_index_info_map_.reserve(20000);
-        value_buffer = new char[1024 * 32];
-        key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
-        db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
+        key_index_info_map_.reserve(18000);
         read_index_info();
+        read_db_info();
     }
 
     virtual ~Answer() {
-        delete[] value_buffer;
+        munmap(key_index_mmap_, SMALL_INDEX_LENGTH);
+        close(key_index_file_descriptor_);
     }
 
     inline string get(string key) {
@@ -80,24 +89,12 @@ public:
         }
         else {
             auto &index_pair = key_index_info_map_[key];
-            db_stream_.seekg(index_pair.first, ios::beg);
-            db_stream_.read(value_buffer, index_pair.second);
-            return string(value_buffer, 0, index_pair.second);
+            return string();
         }
     }
 
     inline void put(string key, string value) {
-        if (is_first_in_) {
-            max_cache_size_ = value.size() > 5000 ? 4000 : 125000;
-            is_first_in_ = false;
-        }
         auto value_size = value.size();
-        key_index_stream_ << key << "\n";
-        key_index_stream_ << prefix_sum_index_ << "\n";
-        key_index_stream_ << value_size << "\n" << flush;
-
-        db_stream_.seekp(0, ios::end);
-        db_stream_ << value << flush;
 
         key_index_info_map_[key] = make_pair(prefix_sum_index_, value_size);
         prefix_sum_index_ += value_size;

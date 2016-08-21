@@ -22,7 +22,7 @@ int main() {
     offset = 0;
     page_aligned_offset = offset & ~(sysconf(_SC_PAGE_SIZE) - 1);
 
-    file_descriptor = open(DB_FILE_NAME, O_RDWR | O_CREAT | O_APPEND, 0600);
+    file_descriptor = open(DB_FILE_NAME, O_RDWR | O_CREAT, 0600);
     if (file_descriptor == -1)
         cout << "fail open" << endl;
     else
