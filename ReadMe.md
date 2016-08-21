@@ -1,8 +1,9 @@
 #Key-Value Store
 ##Final-Thinking
-- MMap Usage
-- Faster HashTable Impl
-- SIMD For HashTable
+- Mmap Usage, ftruncate to change the size, key-value_index-value_len could be fixed length
+- Faster HashTable Impl, 1) hash table slot big enough and consider cache, 2) not required to implement erase, 3) try 
+to use simd to accelerate the computation of hash function
+- Think of allocate enough virtual memory for holding strings
 - [Target](Target.md) 
 
 ##Thinking

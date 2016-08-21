@@ -32,7 +32,7 @@ int main() {
     cout << status_block.st_size << endl;
     cout << "current page_alignment:" << page_aligned_offset << endl;
 
-    off_t length = 1024 * 1024;
+    off_t length = 1024 * 1024 * 1024;
 
     logical_address = (char *) mmap(0, length + offset - page_aligned_offset, PROT_READ | PROT_WRITE, MAP_SHARED,
                                     file_descriptor, page_aligned_offset);
