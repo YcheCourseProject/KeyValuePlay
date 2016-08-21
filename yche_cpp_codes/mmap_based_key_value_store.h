@@ -60,9 +60,11 @@ private:
         string key_str;
         for (auto i = 0; i < 90000; ++i) {
             if (key_index_mmap_[i * 77 + 76] == '\n') {
-                key_count_++;
                 key_str = string(key_index_mmap_ + i * 77, 0, 70);
                 trim_right_blank(key_str);
+                if (key_str.length() == 0)
+                    continue;
+                key_count_++;
                 prefix_sum_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
                 length_ = deserialize<uint16_t>(key_index_mmap_ + i * 77 + 74);
                 key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
@@ -76,7 +78,8 @@ private:
     inline void read_db_info() {
         db_file_descriptor_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
         ftruncate(db_file_descriptor_, SMALL_DB_LENGTH);
-        db_value_mmap_ = (char *) mmap(0, SMALL_DB_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED,
+        db_value_mmap_ = (char *) mmap(0, SMALL_DB_LENGTH, PROT_READ | PROT_WRITE,
+                                       MAP_SHARED | MAP_POPULATE | MAP_NONBLOCK,
                                        db_file_descriptor_, 0);
         memcpy(db_value_buf_, db_value_mmap_, 90000 * 160);
     }
@@ -85,7 +88,6 @@ public:
     Answer() {
         serialization_buf_ = new char[4];
         db_value_buf_ = new char[90000 * 160];
-        key_index_info_map_.reserve(18000);
         read_index_info();
         read_db_info();
     }
@@ -116,9 +118,9 @@ public:
         char *ptr = key_index_mmap_ + key_count_ * 77;
         memcpy(ptr, key.c_str(), key.size());
         serialize(serialization_buf_, prefix_sum_index_);
-        memcpy(ptr+70, serialization_buf_, 4);
+        memcpy(ptr + 70, serialization_buf_, 4);
         serialize(serialization_buf_, length_);
-        memcpy(ptr+74, serialization_buf_, 2);
+        memcpy(ptr + 74, serialization_buf_, 2);
         ptr[76] = '\n';
         memcpy(db_value_mmap_ + prefix_sum_index_, value.c_str(), length_);
         memcpy(db_value_buf_ + prefix_sum_index_, value.c_str(), length_);

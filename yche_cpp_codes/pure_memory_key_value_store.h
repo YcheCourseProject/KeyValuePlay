@@ -89,7 +89,7 @@ class Answer {
 private:
     yche_string_string_map<200000> yche_map_;
     fstream db_file_stream_;
-    size_t count{0};
+//    size_t count{0};
 
     inline pair<string, string> split(const string &str) {
         auto iter_begin = str.begin();
@@ -125,11 +125,11 @@ public:
     }
 
     inline void put(string &&key, string &&value) { //存储KV
-        ++count;
-        db_file_stream_ << key << SEPERATOR_STRING << value << '\n';
-        if ((count % 13 == 1 || count % 13 == 3 || count % 13 == 11)) {
-            db_file_stream_ << flush;
-        }
+//        ++count;
+        db_file_stream_ << key << SEPERATOR_STRING << value << '\n'<<flush;
+//        if ((count % 13 == 1 || count % 13 == 3 || count % 13 == 11)) {
+//            db_file_stream_ << flush;
+//        }
         yche_map_.insert_or_replace(key, value);
     }
 };
