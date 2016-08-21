@@ -5,6 +5,8 @@ add_executable(file_study file_study/TraverseDir.cpp)
 add_executable(string_stream_study file_study/StringStream.cpp)
 add_executable(string_stream_reverse file_study/StringStreamReverseRead.cpp)
 add_executable(fstream_study file_study/FstreamRWStudy.cpp)
+add_executable(uint_convert string_study/test_unit32_chars_convert.cpp)
+
 
 add_executable(string_Study string_study/StringStudy.cpp)
 add_executable(convert_study string_study/CharArrayConvertInt32.cpp)
