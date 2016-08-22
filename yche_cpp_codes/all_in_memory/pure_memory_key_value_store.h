@@ -11,6 +11,12 @@
 #include <cstddef>
 #include <iostream>
 
+#include <cstring>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 using namespace std;
 
 #define FILE_NAME  "tuple_transaction.db"
@@ -24,22 +30,22 @@ private:
     size_t current_size_{0};
     size_t slot_max_size_{slot_num};
 
-    inline void rebuild() {
-        vector<pair<string, string>> rebuilding_hash_table;
-        slot_max_size_ *= 2;
-        rebuilding_hash_table.resize(slot_max_size_);
-        for (auto previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
-            if (my_hash_table_[previous_index].first.size() > 0) {
-                auto new_index = hash_func(my_hash_table_[previous_index].first) % slot_max_size_;
-                for (; rebuilding_hash_table[new_index].first.size() != 0;
-                       new_index = (++new_index) % slot_max_size_) {
-                }
-                rebuilding_hash_table[new_index] = move(my_hash_table_[previous_index]);
-            }
-
-        }
-        my_hash_table_ = move(rebuilding_hash_table);
-    }
+//    inline void rebuild() {
+//        vector<pair<string, string>> rebuilding_hash_table;
+//        slot_max_size_ *= 2;
+//        rebuilding_hash_table.resize(slot_max_size_);
+//        for (auto previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
+//            if (my_hash_table_[previous_index].first.size() > 0) {
+//                auto new_index = hash_func(my_hash_table_[previous_index].first) % slot_max_size_;
+//                for (; rebuilding_hash_table[new_index].first.size() != 0;
+//                       new_index = (++new_index) % slot_max_size_) {
+//                }
+//                rebuilding_hash_table[new_index] = move(my_hash_table_[previous_index]);
+//            }
+//
+//        }
+//        my_hash_table_ = move(rebuilding_hash_table);
+//    }
 
 public:
     yche_map() : my_hash_table_(slot_num) {}
@@ -55,7 +61,7 @@ public:
     inline string *find(const string &key) {
         auto index = hash_func(key) % slot_max_size_;
         //linear probing
-        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+        for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
                 return &my_hash_table_[index].second;
             }
@@ -65,7 +71,7 @@ public:
 
     inline void insert_or_replace(const string &key, const string &value) {
         auto index = hash_func(key) % slot_max_size_;
-        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+        for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
                 my_hash_table_[index].second = value;
                 return;
@@ -74,20 +80,22 @@ public:
         ++current_size_;
         my_hash_table_[index].first = key;
         my_hash_table_[index].second = value;
-        if (current_size_ / slot_max_size_ > 0.9) {
-            rebuild();
-        }
+//        if (current_size_ / slot_max_size_ > 0.8) {
+//            rebuild();
+//        }
     }
 };
 
 class Answer {
 private:
     yche_map<60000> yche_map_;
-    fstream db_file_stream_;
+    int file_descriptor_;
+    char *mmap_;
+    int index_{0};
 
 public:
     Answer() {
-        fstream input_file_stream{FILE_NAME, ios::in | ios::out | ios::app | ios::binary};
+        fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
         string key_str;
         string value_str;
         for (; input_file_stream.good();) {
@@ -95,9 +103,13 @@ public:
             if (input_file_stream.good()) {
                 getline(input_file_stream, value_str);
                 yche_map_.insert_or_replace(key_str, value_str);
+                index_ += key_str.size() + value_str.size() + 2;
             }
         }
-        db_file_stream_.open(FILE_NAME, ios::out | ios::app | ios::binary);
+        input_file_stream.close();
+        file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
+        ftruncate(file_descriptor_, 6000000);
+        mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
     inline string get(string key) {
@@ -111,7 +123,11 @@ public:
     }
 
     inline void put(string key, string value) {
-        db_file_stream_ << key << '\n' << value << '\n' << flush;
+        memcpy(mmap_ + index_, key.c_str(), key.size());
+        mmap_[index_ + key.size()] = '\n';
+        memcpy(mmap_ + index_ + key.size() + 1, value.c_str(), value.size());
+        mmap_[index_ + key.size() + value.size() + 1] = '\n';
+        index_ += key.size() + value.size() + 2;
         yche_map_.insert_or_replace(key, value);
     }
 };

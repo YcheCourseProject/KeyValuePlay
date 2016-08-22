@@ -90,7 +90,7 @@ void read_frog_study() {
 void write_meta_and_read() {
     fstream my_meta_stream("yche.txt", ios::in | ios::out | ios::app);
     my_meta_stream.seekp(0, ios::beg);
-    my_meta_stream << left << setw(10) << "small \n" << flush;
+    my_meta_stream << left << setw(10) << "all_in_memory \n" << flush;
     my_meta_stream.seekg(0, ios::beg);
     string tmp_string;
     my_meta_stream >> tmp_string;

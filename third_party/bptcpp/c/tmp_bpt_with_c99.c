@@ -1051,7 +1051,7 @@ node *adjust_root(node *root) {
 }
 
 /* Coalesces a node that has become
- * too small after deletion
+ * too all_in_memory after deletion
  * with a neighboring node that
  * can accept the additional entries
  * without exceeding the maximum.
@@ -1140,9 +1140,9 @@ node *coalesce_nodes(node *root, node *n, node *neighbor, int neighbor_index,
 }
 
 /* Redistributes entries between two nodes when
- * one has become too small after deletion
+ * one has become too all_in_memory after deletion
  * but its neighbor is too big to append the
- * small node's entries without exceeding the
+ * all_in_memory node's entries without exceeding the
  * maximum
  */
 node *redistribute_nodes(node *root, node *n, node *neighbor,

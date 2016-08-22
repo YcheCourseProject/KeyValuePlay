@@ -14,17 +14,27 @@
 
 #define FILE_NAME "transaction.db"
 
+#include <cstring>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 using namespace std;
 
 class Answer {
 private:
     unordered_map<string, string> yche_map_;
-    fstream db_file_stream_;
+    int file_descriptor_;
+    char *mmap_;
+    int index_{0};
 
 public:
     Answer() {
         yche_map_.reserve(60000);
-        fstream input_file_stream{FILE_NAME, ios::in | ios::out | ios::app | ios::binary};
+        fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
+        char *buffer = new char[8000000];
+        input_file_stream.rdbuf()->pubsetbuf(buffer, 8000000);
         string key_str;
         string value_str;
         for (; input_file_stream.good();) {
@@ -32,9 +42,19 @@ public:
             if (input_file_stream.good()) {
                 getline(input_file_stream, value_str);
                 yche_map_[key_str] = value_str;
+                index_ += key_str.size() + value_str.size() + 2;
             }
         }
-        db_file_stream_.open(FILE_NAME, ios::out | ios::app | ios::binary);
+        delete[]buffer;
+        input_file_stream.close();
+        file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
+        ftruncate(file_descriptor_, 8000000);
+        mmap_ = (char *) mmap(0, 8000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
+    }
+
+    virtual ~Answer() {
+        munmap(mmap_, 8000000);
+        close(file_descriptor_);
     }
 
     inline string get(string key) {
@@ -48,7 +68,11 @@ public:
     }
 
     inline void put(string key, string value) {
-        db_file_stream_ << key << '\n' << value << '\n' << flush;
+        memcpy(mmap_ + index_, key.c_str(), key.size());
+        mmap_[index_ + key.size()] = '\n';
+        memcpy(mmap_ + index_ + key.size() + 1, value.c_str(), value.size());
+        mmap_[index_ + key.size() + value.size() + 1] = '\n';
+        index_ += key.size() + value.size() + 2;
         yche_map_[key] = value;
     }
 };

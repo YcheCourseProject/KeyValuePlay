@@ -111,7 +111,7 @@ public:
         prefix_sum_index_ += value_size;
 
         if (key_value_map_.size() < max_cache_size_ || key_value_map_.find(key) != key_value_map_.end()) {
-            key_value_map_[key] = std::move(value);
+            key_value_map_[key] = move(value);
         }
     }
 };
