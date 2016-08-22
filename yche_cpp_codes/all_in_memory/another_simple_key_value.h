@@ -7,16 +7,13 @@
 
 #include <string>
 #include <fstream>
-#include <sstream>
 #include <algorithm>
-#include <iostream>
 #include <unordered_map>
 
 #define FILE_NAME "transaction.db"
 
 #include <cstring>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -30,11 +27,11 @@ private:
     int index_{0};
 
 public:
-    Answer() {
+    inline Answer() {
         yche_map_.reserve(60000);
         fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
-        char *buffer = new char[8000000];
-        input_file_stream.rdbuf()->pubsetbuf(buffer, 8000000);
+        char *buffer = new char[6000000];
+        input_file_stream.rdbuf()->pubsetbuf(buffer, 6000000);
         string key_str;
         string value_str;
         for (; input_file_stream.good();) {
@@ -48,13 +45,8 @@ public:
         delete[]buffer;
         input_file_stream.close();
         file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
-        ftruncate(file_descriptor_, 8000000);
-        mmap_ = (char *) mmap(0, 8000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
-    }
-
-    virtual ~Answer() {
-        munmap(mmap_, 8000000);
-        close(file_descriptor_);
+        ftruncate(file_descriptor_, 6000000);
+        mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
     inline string get(string key) {

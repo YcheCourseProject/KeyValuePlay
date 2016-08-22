@@ -9,11 +9,9 @@
 #include <fstream>
 #include <algorithm>
 #include <cstddef>
-#include <iostream>
 
 #include <cstring>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -31,7 +29,7 @@ private:
     size_t slot_max_size_{slot_num};
 
 public:
-    yche_map() : my_hash_table_(slot_num) {}
+    inline yche_map() : my_hash_table_(slot_num) {}
 
     inline void reserve(int size) {
         my_hash_table_.resize(size);
@@ -75,21 +73,24 @@ private:
     int index_{0};
 
 public:
-    Answer() {
+    inline Answer() {
         fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
+        bool is_first_in = true;
         string key_str;
         string value_str;
         for (; input_file_stream.good();) {
             getline(input_file_stream, key_str);
             if (input_file_stream.good()) {
+                if (is_first_in)
+                    is_first_in = false;
                 getline(input_file_stream, value_str);
                 yche_map_.insert_or_replace(key_str, value_str);
                 index_ += key_str.size() + value_str.size() + 2;
             }
         }
-        input_file_stream.close();
         file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
-        ftruncate(file_descriptor_, 6000000);
+        if (is_first_in)
+            ftruncate(file_descriptor_, 6000000);
         mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
