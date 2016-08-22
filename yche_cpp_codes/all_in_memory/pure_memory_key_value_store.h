@@ -61,13 +61,12 @@ public:
         ++current_size_;
         my_hash_table_[index].first = key;
         my_hash_table_[index].second = value;
-
     }
 };
 
 class Answer {
 private:
-    yche_map<50000> yche_map_;
+    yche_map<60000> yche_map_;
     int file_descriptor_;
     char *mmap_;
     int index_{0};
@@ -75,6 +74,8 @@ private:
 public:
     inline Answer() {
         fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
+        char *buffer = new char[6000000];
+        input_file_stream.rdbuf()->pubsetbuf(buffer, 6000000);
         bool is_first_in = true;
         string key_str;
         string value_str;
@@ -88,6 +89,7 @@ public:
                 index_ += key_str.size() + value_str.size() + 2;
             }
         }
+        delete[]buffer;
         file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
         if (is_first_in)
             ftruncate(file_descriptor_, 6000000);
