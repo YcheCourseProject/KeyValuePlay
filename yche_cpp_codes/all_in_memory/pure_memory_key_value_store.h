@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <iostream>
 
 using namespace std;
 
@@ -76,34 +77,32 @@ public:
         struct stat file_status;
         file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
         fstat(file_descriptor_, &file_status);
-        if (file_status.st_size == 6000000) {
-            mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
-            string key_string;
-            string value_string;
-            int start = 0;
-            int end = 0;
-            for (bool is_change = true; is_change;) {
-                is_change = false;
-                for (end = start; end - start < 71; ++end) {
-                    if (mmap_[end] == '\n') {
-                        key_string = string(mmap_, start, end - start);
-                        start = end + 1;
-                        for (end = start; end - start < 261; ++end) {
-                            if (mmap_[end] == '\n') {
-                                value_string = string(mmap_, start, end - start);
-                                yche_map_.insert_or_replace(key_string, value_string);
-                                index_ += key_string.size() + value_string.size() + 2;
-                                is_change = true;
-                                start = end + 1;
-                            }
+        ftruncate(file_descriptor_, 6000000);
+
+        mmap_ = (char *) mmap(0, 6000000, PROT_READ | PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
+        string key_string;
+        string value_string;
+        int start = 0;
+        int end = 0;
+        for (bool is_change = true; is_change;) {
+            is_change = false;
+            for (end = start; end - start < 71; ++end) {
+                if (mmap_[end] == '\n') {
+                    key_string = string(mmap_, start, end - start);
+                    cout << "key:" << key_string << endl;
+                    start = end + 1;
+                    for (end = start; end - start < 261; ++end) {
+                        if (mmap_[end] == '\n') {
+                            value_string = string(mmap_, start, end - start);
+                            cout << "value:" << value_string << endl;
+                            yche_map_.insert_or_replace(key_string, value_string);
+                            index_ += key_string.size() + value_string.size() + 2;
+                            is_change = true;
+                            start = end + 1;
                         }
                     }
                 }
             }
-        }
-        else {
-            ftruncate(file_descriptor_, 6000000);
-            mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
         }
     }
 
