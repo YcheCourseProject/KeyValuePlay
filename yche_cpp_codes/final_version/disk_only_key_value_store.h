@@ -22,6 +22,17 @@
 
 using namespace std;
 
+template<typename T>
+void serialize(char *buffer, T integer) {
+    memcpy(buffer, &integer, sizeof(T));
+}
+
+template<typename T>
+T deserialize(char *buffer) {
+    T integer;
+    memcpy(&integer, buffer, sizeof(T));
+}
+
 class Answer {
 private:
     unordered_map<string, pair<int, int>> key_index_info_map_;
@@ -37,7 +48,6 @@ private:
     bool is_initialized_{false};
 
     inline void read_index_info() {
-        cout << "Go" << endl;
         fstream key_index_stream;
         key_index_stream.open(INDEX_FILE_NAME, ios::in | ios::binary);
         string key_str;
@@ -50,19 +60,21 @@ private:
                 getline(key_index_stream, length_str);
                 prefix_sum_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
-                if (is_initialized_ == false) {
+                if (!is_initialized_) {
                     is_initialized_ = true;
                     init_map_info(length_);
-                    struct stat status_block;
-                    fstat(file_descriptor_, &status_block);
-                    file_descriptor_ = open(INDEX_FILE_NAME, O_RDWR | O_CREAT, 0600);
-                    mmap_ = (char *) mmap(0, status_block.st_size, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
                 }
                 key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
             }
         }
         prefix_sum_index_ = prefix_sum_index_ + length_;
         key_index_ = prefix_sum_index_;
+        struct stat status_block;
+        fstat(file_descriptor_, &status_block);
+        file_descriptor_ = open(INDEX_FILE_NAME, O_RDWR | O_CREAT, 0600);
+        if (is_initialized_)
+            mmap_ = (char *) mmap(0, status_block.st_size, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
+
     }
 
     inline void init_map_info(int length) {
@@ -78,8 +90,8 @@ private:
     inline void truncate_key_index_file(int length) {
         auto size = 0;
         if (length < 500) {
-            ftruncate(file_descriptor_, 2000000);
-            size = 2000000;
+            ftruncate(file_descriptor_, 20000000);
+            size = 20000000;
         } else if (length < 5000) {
             ftruncate(file_descriptor_, 110000000);
             size = 110000000;
@@ -95,7 +107,6 @@ public:
         value_buffer = new char[1024 * 32];
         read_index_info();
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
-
     }
 
     virtual ~Answer() {
@@ -116,7 +127,7 @@ public:
 
     inline void put(string key, string value) {
         length_ = value.size();
-        if (is_initialized_ == false) {
+        if (!is_initialized_) {
             init_map_info(length_);
         }
         if (key_index_ == 0) {

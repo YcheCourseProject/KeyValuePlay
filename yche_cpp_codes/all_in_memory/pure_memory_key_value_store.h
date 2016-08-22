@@ -12,6 +12,7 @@
 
 #include <cstring>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -72,24 +73,38 @@ private:
 
 public:
     inline Answer() {
-        fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
-        bool is_first_in = true;
-        string key_str;
-        string value_str;
-        for (; input_file_stream.good();) {
-            getline(input_file_stream, key_str);
-            if (input_file_stream.good()) {
-                if (is_first_in)
-                    is_first_in = false;
-                getline(input_file_stream, value_str);
-                yche_map_.insert_or_replace(key_str, value_str);
-                index_ += key_str.size() + value_str.size() + 2;
+        struct stat file_status;
+        file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
+        fstat(file_descriptor_, &file_status);
+        if (file_status.st_size == 6000000) {
+            mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
+            string key_string;
+            string value_string;
+            int start = 0;
+            int end = 0;
+            for (bool is_change = true; is_change;) {
+                is_change = false;
+                for (end = start; end - start < 71; ++end) {
+                    if (mmap_[end] == '\n') {
+                        key_string = string(mmap_, start, end - start);
+                        start = end + 1;
+                        for (end = start; end - start < 261; ++end) {
+                            if (mmap_[end] == '\n') {
+                                value_string = string(mmap_, start, end - start);
+                                yche_map_.insert_or_replace(key_string, value_string);
+                                index_ += key_string.size() + value_string.size() + 2;
+                                is_change = true;
+                                start = end + 1;
+                            }
+                        }
+                    }
+                }
             }
         }
-        file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
-        if (is_first_in)
+        else {
             ftruncate(file_descriptor_, 6000000);
-        mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
+            mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
+        }
     }
 
     inline string get(string key) {
