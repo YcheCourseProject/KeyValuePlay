@@ -12,7 +12,7 @@
 #include <iostream>
 #include <unordered_map>
 
-#define FILE_NAME "tuple_transaction.db"
+#define FILE_NAME "transaction.db"
 
 using namespace std;
 
@@ -37,7 +37,7 @@ public:
         db_file_stream_.open(FILE_NAME, ios::out | ios::app | ios::binary);
     }
 
-    inline string get(string &&key) {
+    inline string get(string key) {
         auto result = yche_map_.find(key);
         if (result != yche_map_.end()) {
             return result->second;
@@ -47,7 +47,7 @@ public:
         }
     }
 
-    inline void put(string &&key, string &&value) {
+    inline void put(string key, string value) {
         db_file_stream_ << key << '\n' << value << '\n' << flush;
         yche_map_[key] = value;
     }

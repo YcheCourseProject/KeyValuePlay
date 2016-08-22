@@ -100,7 +100,7 @@ public:
         db_file_stream_.open(FILE_NAME, ios::out | ios::app | ios::binary);
     }
 
-    inline string get(string &&key) {
+    inline string get(string key) {
         auto result = yche_map_.find(key);
         if (result != nullptr) {
             return *result;
@@ -110,7 +110,7 @@ public:
         }
     }
 
-    inline void put(string &&key, string &&value) {
+    inline void put(string key, string value) {
         db_file_stream_ << key << '\n' << value << '\n' << flush;
         yche_map_.insert_or_replace(key, value);
     }
