@@ -30,23 +30,6 @@ private:
     size_t current_size_{0};
     size_t slot_max_size_{slot_num};
 
-//    inline void rebuild() {
-//        vector<pair<string, string>> rebuilding_hash_table;
-//        slot_max_size_ *= 2;
-//        rebuilding_hash_table.resize(slot_max_size_);
-//        for (auto previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
-//            if (my_hash_table_[previous_index].first.size() > 0) {
-//                auto new_index = hash_func(my_hash_table_[previous_index].first) % slot_max_size_;
-//                for (; rebuilding_hash_table[new_index].first.size() != 0;
-//                       new_index = (++new_index) % slot_max_size_) {
-//                }
-//                rebuilding_hash_table[new_index] = move(my_hash_table_[previous_index]);
-//            }
-//
-//        }
-//        my_hash_table_ = move(rebuilding_hash_table);
-//    }
-
 public:
     yche_map() : my_hash_table_(slot_num) {}
 
@@ -80,15 +63,13 @@ public:
         ++current_size_;
         my_hash_table_[index].first = key;
         my_hash_table_[index].second = value;
-//        if (current_size_ / slot_max_size_ > 0.8) {
-//            rebuild();
-//        }
+
     }
 };
 
 class Answer {
 private:
-    yche_map<60000> yche_map_;
+    yche_map<50000> yche_map_;
     int file_descriptor_;
     char *mmap_;
     int index_{0};
