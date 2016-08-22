@@ -74,7 +74,7 @@ public:
         ++current_size_;
         my_hash_table_[index].first = key;
         my_hash_table_[index].second = value;
-        if (current_size_ / slot_max_size_ > 0.8) {
+        if (current_size_ / slot_max_size_ > 0.9) {
             rebuild();
         }
     }
