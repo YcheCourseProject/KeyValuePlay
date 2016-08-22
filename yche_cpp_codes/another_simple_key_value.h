@@ -23,7 +23,7 @@ private:
 
 public:
     Answer() {
-        yche_map_.reserve(180000);
+        yche_map_.reserve(60000);
         fstream input_file_stream{FILE_NAME, ios::in | ios::out | ios::app | ios::binary};
         string key_str;
         string value_str;

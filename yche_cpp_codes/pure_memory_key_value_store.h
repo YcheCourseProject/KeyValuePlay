@@ -82,7 +82,7 @@ public:
 
 class Answer {
 private:
-    yche_map<> yche_map_;
+    yche_map<60000> yche_map_;
     fstream db_file_stream_;
 
 public:
