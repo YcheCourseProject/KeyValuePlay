@@ -17,7 +17,7 @@
 
 #define MEDIUM_BUFFER_SIZE 200000000
 #define BIG_BUFFER_SIZE 120000000
-#define SMALL_BUFFER_SIZE 50000000
+#define SMALL_BUFFER_SIZE 40
 
 using namespace std;
 
@@ -150,13 +150,15 @@ public:
         else {
             auto &index_pair = key_index_info_map_[key];
             char *ptr = value_circular_buffer_.peek_info(index_pair.first);
-//            if (ptr != nullptr)
-//                return string(ptr, 0, index_pair.second);
-//            else {
+            if (ptr != nullptr) {
+                cout << "Hit!!" << endl;
+                return string(ptr, 0, index_pair.second);
+            }
+            else {
                 db_stream_.seekg(index_pair.first, ios::beg);
                 db_stream_.read(value_buffer, index_pair.second);
                 return string(value_buffer, 0, index_pair.second);
-//            }
+            }
         }
     }
 
