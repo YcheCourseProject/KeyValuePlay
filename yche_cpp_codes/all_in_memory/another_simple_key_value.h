@@ -30,8 +30,6 @@ public:
     inline Answer() {
         yche_map_.reserve(60000);
         fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
-        char *buffer = new char[6000000];
-        input_file_stream.rdbuf()->pubsetbuf(buffer, 6000000);
         string key_str;
         string value_str;
         for (; input_file_stream.good();) {
@@ -42,7 +40,6 @@ public:
                 index_ += key_str.size() + value_str.size() + 2;
             }
         }
-        delete[]buffer;
         input_file_stream.close();
         file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
         ftruncate(file_descriptor_, 6000000);

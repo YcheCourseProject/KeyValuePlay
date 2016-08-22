@@ -17,8 +17,8 @@
 
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
-#define SMALL_INDEX_LENGTH 90000*77
-#define SMALL_DB_LENGTH 90000*160
+#define SMALL_INDEX_LENGTH 3000000
+#define SMALL_DB_LENGTH 6000000
 
 using namespace std;
 
@@ -46,11 +46,14 @@ private:
     char *db_value_mmap_;
     char *db_value_buf_;
     char *serialization_buf_;
+
     int key_index_file_descriptor_;
     int db_file_descriptor_;
+
     int key_count_{0};
     uint32_t prefix_sum_index_{0};
     uint16_t length_{0};
+    bool is_first_in_{true};
 
     inline void read_index_info() {
         key_index_file_descriptor_ = open(INDEX_FILE_NAME, O_RDWR | O_CREAT, 0600);
@@ -64,6 +67,9 @@ private:
                 trim_right_blank(key_str);
                 if (key_str.length() == 0)
                     continue;
+                if (is_first_in_) {
+                    is_first_in_ = false;
+                }
                 key_count_++;
                 prefix_sum_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
                 length_ = deserialize<uint16_t>(key_index_mmap_ + i * 77 + 74);
@@ -77,27 +83,19 @@ private:
 
     inline void read_db_info() {
         db_file_descriptor_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
-        ftruncate(db_file_descriptor_, SMALL_DB_LENGTH);
-        db_value_mmap_ = (char *) mmap(0, SMALL_DB_LENGTH, PROT_READ | PROT_WRITE,
-                                       MAP_SHARED | MAP_POPULATE | MAP_NONBLOCK,
-                                       db_file_descriptor_, 0);
-        memcpy(db_value_buf_, db_value_mmap_, 90000 * 160);
+        if (is_first_in_)
+            ftruncate(db_file_descriptor_, SMALL_DB_LENGTH);
+        db_value_mmap_ = (char *) mmap(0, SMALL_DB_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED, db_file_descriptor_, 0);
+        memcpy(db_value_buf_, db_value_mmap_, SMALL_DB_LENGTH);
     }
 
 public:
     Answer() {
+        key_index_info_map_.reserve(60000);
         serialization_buf_ = new char[4];
-        db_value_buf_ = new char[90000 * 160];
+        db_value_buf_ = new char[SMALL_DB_LENGTH];
         read_index_info();
         read_db_info();
-    }
-
-    virtual ~Answer() {
-        delete[]serialization_buf_;
-        munmap(key_index_mmap_, SMALL_INDEX_LENGTH);
-        close(key_index_file_descriptor_);
-        munmap(db_value_mmap_, SMALL_DB_LENGTH);
-        close(db_file_descriptor_);
     }
 
     inline string get(string key) {
@@ -105,9 +103,8 @@ public:
             return "NULL";
         }
         else {
-            auto &index_pair = key_index_info_map_[key];
-            string res_string = string(db_value_buf_ + index_pair.first, 0, index_pair.second);
-            return res_string;
+            auto index_pair = key_index_info_map_[key];
+            return string(db_value_buf_ + index_pair.first, 0, index_pair.second);
         }
     }
 
