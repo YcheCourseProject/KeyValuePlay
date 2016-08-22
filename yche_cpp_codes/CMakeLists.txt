@@ -6,3 +6,4 @@ add_executable(efficient_io_key_value_store final_version/efficient_io_key_value
 
 add_executable(mmap_based_key_value_store mmap_based_key_value_store.h test_mmap_based_key_value_store.cpp)
 add_executable(test_another all_in_memory/another_simple_key_value.h all_in_memory/test_another.cpp)
+add_executable(disk_only_key_value_store final_version/disk_only_key_value_store.cpp final_version/disk_only_key_value_store.h)
