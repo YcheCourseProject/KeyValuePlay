@@ -13,6 +13,10 @@
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
 
+#define MEDIUM_BUFFER_SIZE 150000000
+#define BIG_BUFFER_SIZE 120000000
+#define SMALL_BUFFER_SIZE 40000000
+
 using namespace std;
 
 class Answer {
@@ -23,10 +27,7 @@ private:
 
     int prefix_sum_index_{0};
     int length_{0};
-
     char *value_buffer;
-    bool is_first_in_{true};
-    bool is_small_{false};
 
     inline void read_index_info() {
         string key_str;
@@ -39,10 +40,6 @@ private:
                 getline(key_index_stream_, length_str);
                 prefix_sum_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
-                if (is_first_in_) {
-                    is_small_ = length_ < 500 ? true : false;
-                    is_first_in_ = false;
-                }
                 key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
             }
         }
@@ -68,9 +65,6 @@ public:
             return "NULL";
         }
         else {
-            if (is_small_) {
-
-            }
             auto &index_pair = key_index_info_map_[key];
             db_stream_.seekg(index_pair.first, ios::beg);
             db_stream_.read(value_buffer, index_pair.second);
@@ -79,19 +73,16 @@ public:
     }
 
     inline void put(string key, string value) {
-        if (is_first_in_) {
-            is_first_in_ = false;
-        }
-        auto value_size = value.size();
+        length_ = value.size();
         key_index_stream_ << key << "\n";
         key_index_stream_ << prefix_sum_index_ << "\n";
-        key_index_stream_ << value_size << "\n" << flush;
+        key_index_stream_ << length_ << "\n" << flush;
 
         db_stream_.seekp(0, ios::end);
         db_stream_ << value << flush;
 
-        key_index_info_map_[key] = make_pair(prefix_sum_index_, value_size);
-        prefix_sum_index_ += value_size;
+        key_index_info_map_[key] = make_pair(prefix_sum_index_, length_);
+        prefix_sum_index_ += length_;
 
     }
 };

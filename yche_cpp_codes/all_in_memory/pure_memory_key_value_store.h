@@ -41,7 +41,6 @@ public:
 
     inline string *find(const string &key) {
         auto index = hash_func(key) % slot_max_size_;
-        //linear probing
         for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
                 return &my_hash_table_[index].second;

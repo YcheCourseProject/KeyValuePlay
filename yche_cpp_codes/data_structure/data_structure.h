@@ -68,4 +68,48 @@ public:
     }
 };
 
+class circular_buff {
+private:
+    int end_index_{0};
+    int buffer_size_;
+
+    bool is_full_{false};
+    int file_offset_begin_;
+
+    char *buffer_{nullptr};
+
+public:
+    inline circular_buff(int buffer_size, int extra_space_size, int file_offset_begin = 0) {
+        buffer_ = new char[buffer_size + extra_space_size];
+        buffer_size_ = buffer_size;
+        file_offset_begin_ = file_offset_begin;
+    }
+
+    inline ~circular_buff() {
+        if (buffer_ != nullptr)
+            delete[]buffer_;
+    }
+
+    inline void push_back(char *value, int size) {
+        if (is_full_) {
+            file_offset_begin_ += size;
+        } else if (end_index_ + size > buffer_size_ - 1) {
+            is_full_ = true;
+        }
+        memcpy(buffer_ + end_index_, value, size);
+        end_index_ = (end_index_ + size) % buffer_size_;
+    }
+
+    inline char *peek_info(int offset) {
+        if (offset >= file_offset_begin_)
+            return buffer_ + ((offset - file_offset_begin_) % buffer_size_);
+        else
+            return nullptr;
+    }
+};
+
+#define MEDIUM_BUFFER_SIZE 150000000
+#define BIG_BUFFER_SIZE 120000000
+#define SMALL_BUFFER_SIZE 40000000
+
 #endif //KEYVALUESTORE_DATA_STRUCTURE_H
