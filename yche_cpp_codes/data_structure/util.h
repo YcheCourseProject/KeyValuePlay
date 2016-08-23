@@ -25,4 +25,17 @@ void trim_right_blank(string &to_trim_string) {
     to_trim_string = std::string(to_trim_string.begin(), iter_back);
 }
 
+
+size_t get_file_size(const char *filename) {
+    struct stat st;
+    stat(filename, &st);
+    return st.st_size;
+}
+
+size_t get_file_size(int file_descriptor) {
+    struct stat st;
+    stat(file_descriptor, &st);
+    return st.st_size;
+}
+
 #endif //KEYVALUESTORE_UTIL_H

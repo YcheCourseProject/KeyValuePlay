@@ -77,33 +77,43 @@ public:
         struct stat file_status;
         file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
         fstat(file_descriptor_, &file_status);
-        ftruncate(file_descriptor_, 6000000);
+        if (file_status.st_size != 6000000)
+            ftruncate(file_descriptor_, 6000000);
 
-        mmap_ = (char *) mmap(0, 6000000, PROT_READ | PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
+        mmap_ = (char *) mmap(0, 6000000, PROT_READ, MAP_SHARED, file_descriptor_, 0);
         string key_string;
         string value_string;
         int start = 0;
         int end = 0;
-        for (bool is_change = true; is_change;) {
-            is_change = false;
-            for (end = start; end - start < 71; ++end) {
+        for (bool is_empty = false; !is_empty && start < 6000000;) {
+            is_empty = true;
+            end = start;
+            for (auto i = 0; i < 71 && end < 6000000; ++i) {
                 if (mmap_[end] == '\n') {
                     key_string = string(mmap_, start, end - start);
-                    cout << "key:" << key_string << endl;
                     start = end + 1;
-                    for (end = start; end - start < 261; ++end) {
+                    end = start;
+                    for (auto j = 0; j < 261 && end < 6000000; ++j) {
                         if (mmap_[end] == '\n') {
+                            is_empty = false;
                             value_string = string(mmap_, start, end - start);
-                            cout << "value:" << value_string << endl;
+                            start = end + 1;
                             yche_map_.insert_or_replace(key_string, value_string);
                             index_ += key_string.size() + value_string.size() + 2;
-                            is_change = true;
-                            start = end + 1;
+                            break;
+                        } else {
+                            ++end;
                         }
                     }
+                    break;
+                } else {
+                    ++end;
                 }
             }
         }
+
+        munmap(mmap_, 6000000);
+        mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
     inline string get(string key) {

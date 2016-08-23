@@ -1,23 +1,13 @@
 //
-// Created by cheyulin on 8/22/16.
+// Created by cheyulin on 8/23/16.
 //
 
-#ifndef KEYVALUESTORE_DISK_ONLY_KEY_VALUE_STORE_H
-#define KEYVALUESTORE_DISK_ONLY_KEY_VALUE_STORE_H
-
-#include <unordered_map>
-#include <algorithm>
-#include <string>
-#include <fstream>
-
-#define INDEX_FILE_NAME "index.meta"
-#define DB_NAME "value.db"
-
-using namespace std;
+#ifndef KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
+#define KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
 
 class Answer {
 private:
-    unordered_map<string, pair<int, int>> key_index_info_map_;
+    unordered_map <string, pair<int, int>> key_index_info_map_;
     fstream key_index_stream_;
     fstream db_stream_;
 
@@ -53,7 +43,7 @@ private:
         if (length < 500) {
             key_index_info_map_.reserve(60000);
         } else if (length < 5000) {
-            key_index_info_map_.reserve(1500000);
+            key_index_info_map_.reserve(600000);
         } else {
             key_index_info_map_.reserve(60000);
         }
@@ -102,4 +92,4 @@ public:
     }
 };
 
-#endif //KEYVALUESTORE_DISK_ONLY_KEY_VALUE_STORE_H
+#endif //KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H

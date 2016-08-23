@@ -72,17 +72,28 @@ class circular_buff {
 private:
     int end_index_{0};
     int buffer_size_;
-
     bool is_full_{false};
-    int file_offset_begin_;
-
     char *buffer_{nullptr};
 
 public:
+    circular_buff() = default;
+
+    int file_offset_begin_;
+
     inline circular_buff(int buffer_size, int extra_space_size, int file_offset_begin = 0) {
         buffer_ = new char[buffer_size + extra_space_size];
         buffer_size_ = buffer_size;
         file_offset_begin_ = file_offset_begin;
+    }
+
+    inline circular_buff &operator=(circular_buff &&circular_buffer) {
+        if (buffer_ != nullptr)
+            delete[]buffer_;
+        buffer_ = circular_buffer.buffer_;
+        circular_buffer.buffer_ = nullptr;
+        is_full_ = circular_buffer.is_full_;
+        end_index_ = circular_buffer.end_index_;
+        buffer_size_ = circular_buffer.buffer_size_;
     }
 
     inline ~circular_buff() {
