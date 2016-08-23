@@ -17,7 +17,7 @@ using namespace std;
 
 hash<string> hash_func;
 
-template<typename T, size_t slot_num = 200000>
+template<typename T, size_t slot_num = 900000>
 class yche_map {
 private:
     vector<pair<string, T>> my_hash_table_;
@@ -26,14 +26,6 @@ private:
 
 public:
     inline yche_map() : my_hash_table_(slot_num) {}
-
-    inline void reserve(int size) {
-        my_hash_table_.resize(size);
-    }
-
-    inline size_t size() {
-        return current_size_;
-    }
 
     inline T *find(const string &key) {
         auto index = hash_func(key) % slot_max_size_;
@@ -53,7 +45,6 @@ public:
                 return;
             }
         }
-        ++current_size_;
         my_hash_table_[index].first = key;
         my_hash_table_[index].second = value;
     }
@@ -64,12 +55,9 @@ private:
     yche_map<pair<int, int>> key_index_info_map_;
     fstream key_index_stream_;
     fstream db_stream_;
-
     int prefix_sum_index_{0};
     int length_{0};
-
     char *value_buffer;
-    bool is_first_in_{true};
 
     inline void read_index_info() {
         string key_str;
@@ -82,25 +70,11 @@ private:
                 getline(key_index_stream_, length_str);
                 prefix_sum_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
-                if (is_first_in_) {
-                    init_map_info(length_);
-                    is_first_in_ = false;
-                }
                 key_index_info_map_.insert_or_replace(key_str, make_pair(prefix_sum_index_, length_));
             }
         }
         prefix_sum_index_ = prefix_sum_index_ + length_;
         key_index_stream_.clear();
-    }
-
-    inline void init_map_info(int length) {
-        if (length < 500) {
-            key_index_info_map_.reserve(60000);
-        } else if (length < 5000) {
-            key_index_info_map_.reserve(1500000);
-        } else {
-            key_index_info_map_.reserve(60000);
-        }
     }
 
 public:
@@ -129,10 +103,6 @@ public:
 
     inline void put(string key, string value) {
         length_ = value.size();
-        if (is_first_in_) {
-            init_map_info(length_);
-            is_first_in_ = false;
-        }
         key_index_stream_ << key << "\n";
         key_index_stream_ << prefix_sum_index_ << "\n";
         key_index_stream_ << length_ << "\n" << flush;
@@ -142,7 +112,6 @@ public:
 
         key_index_info_map_.insert_or_replace(key, make_pair(prefix_sum_index_, length_));
         prefix_sum_index_ += length_;
-
     }
 };
 
