@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <string>
+#include <cstring>
 #include <fstream>
 
 #define INDEX_FILE_NAME "index.meta"
@@ -16,6 +17,57 @@
 using namespace std;
 
 hash<string> hash_func;
+
+class circular_buff {
+private:
+    int end_index_{0};
+    int buffer_size_;
+    bool is_full_{false};
+    char *buffer_{nullptr};
+
+public:
+    circular_buff() = default;
+
+    int file_offset_begin_;
+
+    inline circular_buff(int buffer_size, int extra_space_size, int file_offset_begin = 0) {
+        buffer_ = new char[buffer_size + extra_space_size];
+        buffer_size_ = buffer_size;
+        file_offset_begin_ = file_offset_begin;
+    }
+
+    inline circular_buff &operator=(circular_buff &&right_circular_buffer) {
+        if (buffer_ != nullptr)
+            delete[]buffer_;
+        buffer_ = right_circular_buffer.buffer_;
+        right_circular_buffer.buffer_ = nullptr;
+        is_full_ = right_circular_buffer.is_full_;
+        end_index_ = right_circular_buffer.end_index_;
+        buffer_size_ = right_circular_buffer.buffer_size_;
+    }
+
+    inline ~circular_buff() {
+        if (buffer_ != nullptr)
+            delete[]buffer_;
+    }
+
+    inline void push_back(const char *value, int size) {
+        if (is_full_) {
+            file_offset_begin_ += size;
+        } else if (end_index_ + size > buffer_size_ - 1) {
+            is_full_ = true;
+        }
+        memcpy(buffer_ + end_index_, value, size);
+        end_index_ = (end_index_ + size) % buffer_size_;
+    }
+
+    inline char *peek_info(int offset) {
+        if (offset >= file_offset_begin_)
+            return buffer_ + ((offset - file_offset_begin_) % buffer_size_);
+        else
+            return nullptr;
+    }
+};
 
 template<typename T, size_t slot_num = 900000>
 class yche_map {
@@ -58,6 +110,9 @@ private:
     int prefix_sum_index_{0};
     int length_{0};
     char *value_buffer;
+    circular_buff *buffer_ptr_;
+
+    bool is_init_{false};
 
     inline void read_index_info() {
         string key_str;
@@ -87,6 +142,7 @@ public:
 
     virtual ~Answer() {
         delete[] value_buffer;
+        delete buffer_ptr_;
     }
 
     inline string get(string key) {
@@ -95,6 +151,9 @@ public:
         }
         else {
             auto *index_pair = key_index_info_map_.find(key);
+//            char *ptr = buffer_ptr_->peek_info(index_pair->first);
+//            if (ptr != nullptr)
+//                return string(ptr, 0, index_pair->second);
             db_stream_.seekg(index_pair->first, ios::beg);
             db_stream_.read(value_buffer, index_pair->second);
             return string(value_buffer, 0, index_pair->second);
@@ -103,6 +162,17 @@ public:
 
     inline void put(string key, string value) {
         length_ = value.size();
+        if (!is_init_) {
+            if (length_ < 500)
+                buffer_ptr_ = new circular_buff(10000000, 160, prefix_sum_index_);
+            else if (length_ < 5000)
+                buffer_ptr_ = new circular_buff(200000000, 3000, prefix_sum_index_);
+            else
+                buffer_ptr_ = new circular_buff(100000000, 30000, prefix_sum_index_);
+            is_init_ = true;
+        }
+
+        buffer_ptr_->push_back(value.c_str(), length_);
         key_index_stream_ << key << "\n";
         key_index_stream_ << prefix_sum_index_ << "\n";
         key_index_stream_ << length_ << "\n" << flush;
