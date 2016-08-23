@@ -7,7 +7,7 @@
 
 void basic_test() {
     Answer advanced_store;
-    for (auto i = 0; i < 1000000; i++) {
+    for (auto i = 0; i < 10; i++) {
         advanced_store.put(to_string(i), to_string(i + 1));
         cout << advanced_store.get(to_string(i)) << endl;
     }
@@ -15,7 +15,7 @@ void basic_test() {
 
 void get_test() {
     Answer advanced_store;
-    for (auto i = 0; i < 1000000; i++) {
+    for (auto i = 0; i < 10; i++) {
         cout << advanced_store.get(to_string(i)) << endl;
     }
 }

@@ -53,7 +53,7 @@ public:
         mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
-    inline string get(string key) {
+    inline string get(string &&key) {
         auto result = yche_map_.find(key);
         if (result != yche_map_.end()) {
             return result->second;
@@ -63,7 +63,7 @@ public:
         }
     }
 
-    inline void put(string key, string value) {
+    inline void put(string &&key, string &&value) {
         memcpy(mmap_ + index_, key.c_str(), key.size());
         index_ += key.size();
         mmap_[index_] = '\n';

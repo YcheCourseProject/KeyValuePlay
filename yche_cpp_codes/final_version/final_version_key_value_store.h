@@ -5,17 +5,59 @@
 #ifndef KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
 #define KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
 
+#include <unordered_map>
+#include <algorithm>
+#include <string>
+#include <fstream>
+
+#define INDEX_FILE_NAME "index.meta"
+#define DB_NAME "value.db"
+
+using namespace std;
+
+hash<string> hash_func;
+
+template<typename T, size_t slot_num = 900000>
+class yche_map {
+private:
+    vector<pair<string, T>> my_hash_table_;
+    size_t current_size_{0};
+    size_t slot_max_size_{slot_num};
+
+public:
+    inline yche_map() : my_hash_table_(slot_num) {}
+
+    inline T *find(const string &key) {
+        auto index = hash_func(key) % slot_max_size_;
+        for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+            if (my_hash_table_[index].first == key) {
+                return &my_hash_table_[index].second;
+            }
+        }
+        return nullptr;
+    }
+
+    inline void insert_or_replace(const string &key, const T &value) {
+        auto index = hash_func(key) % slot_max_size_;
+        for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+            if (my_hash_table_[index].first == key) {
+                my_hash_table_[index].second = value;
+                return;
+            }
+        }
+        my_hash_table_[index].first = key;
+        my_hash_table_[index].second = value;
+    }
+};
+
 class Answer {
 private:
-    unordered_map <string, pair<int, int>> key_index_info_map_;
+    yche_map<pair<int, int>> key_index_info_map_;
     fstream key_index_stream_;
     fstream db_stream_;
-
     int prefix_sum_index_{0};
     int length_{0};
-
     char *value_buffer;
-    bool is_first_in_{true};
 
     inline void read_index_info() {
         string key_str;
@@ -28,25 +70,11 @@ private:
                 getline(key_index_stream_, length_str);
                 prefix_sum_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
-                if (is_first_in_) {
-                    init_map_info(length_);
-                    is_first_in_ = false;
-                }
-                key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
+                key_index_info_map_.insert_or_replace(key_str, make_pair(prefix_sum_index_, length_));
             }
         }
         prefix_sum_index_ = prefix_sum_index_ + length_;
         key_index_stream_.clear();
-    }
-
-    inline void init_map_info(int length) {
-        if (length < 500) {
-            key_index_info_map_.reserve(60000);
-        } else if (length < 5000) {
-            key_index_info_map_.reserve(600000);
-        } else {
-            key_index_info_map_.reserve(60000);
-        }
     }
 
 public:
@@ -62,23 +90,19 @@ public:
     }
 
     inline string get(string key) {
-        if (key_index_info_map_.find(key) == key_index_info_map_.end()) {
+        if (key_index_info_map_.find(key) == nullptr) {
             return "NULL";
         }
         else {
-            auto &index_pair = key_index_info_map_[key];
-            db_stream_.seekg(index_pair.first, ios::beg);
-            db_stream_.read(value_buffer, index_pair.second);
-            return string(value_buffer, 0, index_pair.second);
+            auto *index_pair = key_index_info_map_.find(key);
+            db_stream_.seekg(index_pair->first, ios::beg);
+            db_stream_.read(value_buffer, index_pair->second);
+            return string(value_buffer, 0, index_pair->second);
         }
     }
 
     inline void put(string key, string value) {
         length_ = value.size();
-        if (is_first_in_) {
-            init_map_info(length_);
-            is_first_in_ = false;
-        }
         key_index_stream_ << key << "\n";
         key_index_stream_ << prefix_sum_index_ << "\n";
         key_index_stream_ << length_ << "\n" << flush;
@@ -86,10 +110,10 @@ public:
         db_stream_.seekp(0, ios::end);
         db_stream_ << value << flush;
 
-        key_index_info_map_[key] = make_pair(prefix_sum_index_, length_);
+        key_index_info_map_.insert_or_replace(key, make_pair(prefix_sum_index_, length_));
         prefix_sum_index_ += length_;
-
     }
 };
+
 
 #endif //KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
