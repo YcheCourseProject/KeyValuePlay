@@ -14,10 +14,17 @@
 
 #include <cstring>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
 using namespace std;
+
+inline size_t get_file_size(int file_descriptor) {
+    struct stat st;
+    fstat(file_descriptor, &st);
+    return st.st_size;
+}
 
 class Answer {
 private:
@@ -40,9 +47,9 @@ public:
                 index_ += key_str.size() + value_str.size() + 2;
             }
         }
-        input_file_stream.close();
         file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
-        ftruncate(file_descriptor_, 6000000);
+        if (get_file_size(file_descriptor_) != 6000000)
+            ftruncate(file_descriptor_, 6000000);
         mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
@@ -58,10 +65,13 @@ public:
 
     inline void put(string key, string value) {
         memcpy(mmap_ + index_, key.c_str(), key.size());
-        mmap_[index_ + key.size()] = '\n';
-        memcpy(mmap_ + index_ + key.size() + 1, value.c_str(), value.size());
-        mmap_[index_ + key.size() + value.size() + 1] = '\n';
-        index_ += key.size() + value.size() + 2;
+        index_ += key.size();
+        mmap_[index_] = '\n';
+        ++index_;
+        memcpy(mmap_ + index_, value.c_str(), value.size());
+        index_ += value.size();
+        mmap_[index_] = '\n';
+        ++index_;
         yche_map_[key] = value;
     }
 };

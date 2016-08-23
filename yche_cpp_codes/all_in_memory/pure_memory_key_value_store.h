@@ -15,7 +15,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <iostream>
 
 using namespace std;
 
@@ -23,11 +22,16 @@ using namespace std;
 
 hash<string> hash_func;
 
+inline size_t get_file_size(int file_descriptor) {
+    struct stat st;
+    fstat(file_descriptor, &st);
+    return st.st_size;
+}
+
 template<size_t slot_num = 200000>
 class yche_map {
 private:
     vector<pair<string, string>> my_hash_table_;
-    size_t current_size_{0};
     size_t slot_max_size_{slot_num};
 
 public:
@@ -35,10 +39,6 @@ public:
 
     inline void reserve(int size) {
         my_hash_table_.resize(size);
-    }
-
-    inline size_t size() {
-        return current_size_;
     }
 
     inline string *find(const string &key) {
@@ -59,7 +59,6 @@ public:
                 return;
             }
         }
-        ++current_size_;
         my_hash_table_[index].first = key;
         my_hash_table_[index].second = value;
     }
@@ -74,45 +73,20 @@ private:
 
 public:
     inline Answer() {
-        struct stat file_status;
-        file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
-        fstat(file_descriptor_, &file_status);
-        if (file_status.st_size != 6000000)
-            ftruncate(file_descriptor_, 6000000);
-
-        mmap_ = (char *) mmap(0, 6000000, PROT_READ, MAP_SHARED, file_descriptor_, 0);
-        string key_string;
-        string value_string;
-        int start = 0;
-        int end = 0;
-        for (bool is_empty = false; !is_empty && start < 6000000;) {
-            is_empty = true;
-            end = start;
-            for (auto i = 0; i < 71 && end < 6000000; ++i) {
-                if (mmap_[end] == '\n') {
-                    key_string = string(mmap_, start, end - start);
-                    start = end + 1;
-                    end = start;
-                    for (auto j = 0; j < 261 && end < 6000000; ++j) {
-                        if (mmap_[end] == '\n') {
-                            is_empty = false;
-                            value_string = string(mmap_, start, end - start);
-                            start = end + 1;
-                            yche_map_.insert_or_replace(key_string, value_string);
-                            index_ += key_string.size() + value_string.size() + 2;
-                            break;
-                        } else {
-                            ++end;
-                        }
-                    }
-                    break;
-                } else {
-                    ++end;
-                }
+        fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
+        string key_str;
+        string value_str;
+        for (; input_file_stream.good();) {
+            getline(input_file_stream, key_str);
+            if (input_file_stream.good()) {
+                getline(input_file_stream, value_str);
+                yche_map_.insert_or_replace(key_str, value_str);
+                index_ += key_str.size() + value_str.size() + 2;
             }
         }
-
-        munmap(mmap_, 6000000);
+        file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
+        if (get_file_size(file_descriptor_) != 6000000)
+            ftruncate(file_descriptor_, 6000000);
         mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
@@ -128,10 +102,13 @@ public:
 
     inline void put(string key, string value) {
         memcpy(mmap_ + index_, key.c_str(), key.size());
-        mmap_[index_ + key.size()] = '\n';
-        memcpy(mmap_ + index_ + key.size() + 1, value.c_str(), value.size());
-        mmap_[index_ + key.size() + value.size() + 1] = '\n';
-        index_ += key.size() + value.size() + 2;
+        index_ += key.size();
+        mmap_[index_] = '\n';
+        ++index_;
+        memcpy(mmap_ + index_, value.c_str(), value.size());
+        index_ += value.size();
+        mmap_[index_] = '\n';
+        ++index_;
         yche_map_.insert_or_replace(key, value);
     }
 };
