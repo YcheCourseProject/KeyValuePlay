@@ -10,10 +10,23 @@
 #include <string>
 #include <fstream>
 
+#include <cstring>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <iostream>
+
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
 
 using namespace std;
+
+inline size_t get_file_size(int file_descriptor) {
+    struct stat st;
+    fstat(file_descriptor, &st);
+    return st.st_size;
+}
 
 hash<string> hash_func;
 
@@ -55,9 +68,13 @@ private:
     yche_map<pair<int, int>> key_index_info_map_;
     fstream key_index_stream_;
     fstream db_stream_;
+    int db_file_descriptor_;
+    char *db_mmap_;
     int prefix_sum_index_{0};
     int length_{0};
     char *value_buffer;
+
+    bool is_initialized_{false};
 
     inline void read_index_info() {
         string key_str;
@@ -81,7 +98,8 @@ public:
     Answer() {
         value_buffer = new char[1024 * 32];
         key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
-        db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
+        db_file_descriptor_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
+        db_stream_.open(DB_NAME, ios::in | ios::binary);
         read_index_info();
     }
 
@@ -103,12 +121,28 @@ public:
 
     inline void put(string key, string value) {
         length_ = value.size();
+        if (!is_initialized_) {
+            unsigned long file_size = get_file_size(db_file_descriptor_);
+            if (file_size < 10) {
+                if (length_ < 500) {
+                    ftruncate(db_file_descriptor_, 10000000);
+                    file_size = 10000000;
+                } else if (length_ < 5000) {
+                    ftruncate(db_file_descriptor_, 1600000000);
+                    file_size = 1600000000;
+                } else {
+                    ftruncate(db_file_descriptor_, 2900000000);
+                    file_size = 2900000000;
+                }
+            }
+            db_mmap_ = (char *) mmap(NULL, file_size, PROT_WRITE | PROT_READ, MAP_SHARED, db_file_descriptor_, 0);
+            is_initialized_ = true;
+        }
         key_index_stream_ << key << "\n";
         key_index_stream_ << prefix_sum_index_ << "\n";
         key_index_stream_ << length_ << "\n" << flush;
 
-        db_stream_.seekp(0, ios::end);
-        db_stream_ << value << flush;
+        memcpy(db_mmap_ + prefix_sum_index_, value.c_str(), length_);
 
         key_index_info_map_.insert_or_replace(key, make_pair(prefix_sum_index_, length_));
         prefix_sum_index_ += length_;

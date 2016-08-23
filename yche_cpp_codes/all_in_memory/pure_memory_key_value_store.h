@@ -66,7 +66,7 @@ public:
 
 class Answer {
 private:
-    yche_map<60000> yche_map_;
+    yche_map<90000> yche_map_;
     int file_descriptor_;
     char *mmap_;
     int index_{0};

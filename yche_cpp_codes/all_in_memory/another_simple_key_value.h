@@ -35,7 +35,7 @@ private:
 
 public:
     inline Answer() {
-        yche_map_.reserve(60000);
+        yche_map_.reserve(90000);
         fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
         string key_str;
         string value_str;
