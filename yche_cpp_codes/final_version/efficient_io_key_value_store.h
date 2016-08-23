@@ -70,6 +70,7 @@ private:
     fstream db_stream_;
     int db_file_descriptor_;
     char *db_mmap_;
+    char *db_read_mmap_;
     int prefix_sum_index_{0};
     int length_{0};
     char *value_buffer;
@@ -135,7 +136,8 @@ public:
                     file_size = 2900000000;
                 }
             }
-            db_mmap_ = (char *) mmap(NULL, file_size, PROT_WRITE | PROT_READ, MAP_SHARED, db_file_descriptor_, 0);
+            db_mmap_ = (char *) mmap(NULL, file_size, PROT_WRITE, MAP_SHARED, db_file_descriptor_, 0);
+            db_read_mmap_ = (char *) mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, db_file_descriptor_, 0);
             is_initialized_ = true;
         }
         key_index_stream_ << key << "\n";
