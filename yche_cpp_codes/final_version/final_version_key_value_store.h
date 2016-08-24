@@ -30,11 +30,11 @@ private:
     size_t cached_value_size_{0};
     size_t current_size_{0};
     size_t slot_max_size_{slot_num};
-    size_t max_cached_value_size_{150000};
+    size_t max_cached_value_size_{1000};
     string result_string_;
 
 public:
-    inline yche_map() : my_hash_table_(slot_num), value_table_(slot_num) {
+    inline yche_map() : my_hash_table_(slot_num)/*, value_table_(slot_num)*/ {
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
         value_buffer = new char[1024 * 32];
     }
@@ -51,14 +51,14 @@ public:
         auto index = hash_func(key) % slot_max_size_;
         for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
-                if (value_table_[index].size() > 0)
-                    return &value_table_[index];
-                else {
-                    db_stream_.seekg(my_hash_table_[index].second.first, ios::beg);
-                    db_stream_.read(value_buffer, my_hash_table_[index].second.second);
-                    result_string_ = string(value_buffer, 0, my_hash_table_[index].second.second);
-                    return &result_string_;
-                }
+//                if (value_table_[index].size() > 0)
+//                    return &value_table_[index];
+//                else {
+                db_stream_.seekg(my_hash_table_[index].second.first, ios::beg);
+                db_stream_.read(value_buffer, my_hash_table_[index].second.second);
+                result_string_ = string(value_buffer, 0, my_hash_table_[index].second.second);
+                return &result_string_;
+//                }
             }
         }
         return nullptr;
@@ -74,17 +74,17 @@ public:
         for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
             if (my_hash_table_[index].first == key) {
                 my_hash_table_[index].second = make_pair(value_index, value_length);
-                value_table_[index] = value;
+//                value_table_[index] = value;
                 return;
             }
         }
         my_hash_table_[index].first = key;
         my_hash_table_[index].second = make_pair(value_index, value_length);
 
-        if (cached_value_size_ < max_cached_value_size_) {
-            ++cached_value_size_;
-            value_table_[index] = value;
-        }
+//        if (cached_value_size_ < max_cached_value_size_) {
+//            ++cached_value_size_;
+//            value_table_[index] = value;
+//        }
     }
 };
 
@@ -133,7 +133,7 @@ public:
     inline void put(string key, string value) {
         length_ = value.size();
         if (!is_init_) {
-            if (length_ < 5000)
+            if (length_ <= 3000)
                 yche_map_.set_max_cached_value_size(150000);
             else
                 yche_map_.set_max_cached_value_size(1000);
