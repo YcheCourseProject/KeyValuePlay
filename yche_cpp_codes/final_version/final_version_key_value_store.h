@@ -1,7 +1,6 @@
 //
 // Created by cheyulin on 8/23/16.
 //
-
 #ifndef KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
 #define KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
 
@@ -137,7 +136,7 @@ public:
             if (length_ <= 3000)
                 yche_map_.set_max_cached_value_size(150000);
             else
-                yche_map_.set_max_cached_value_size(4200);
+                yche_map_.set_max_cached_value_size(4500);
             is_init_ = true;
         }
         key_index_stream_ << key << "\n";
@@ -148,6 +147,5 @@ public:
         prefix_sum_index_ += length_;
     }
 };
-
 
 #endif //KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
