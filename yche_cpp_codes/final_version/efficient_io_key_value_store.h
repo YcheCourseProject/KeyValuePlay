@@ -65,7 +65,7 @@ public:
 
 class Answer {
 private:
-    yche_map<pair<int, int>> key_index_info_map_;
+    yche_map<pair<int, int>> yche_map_;
     fstream key_index_stream_;
     fstream db_stream_;
     int db_file_descriptor_;
@@ -88,7 +88,7 @@ private:
                 getline(key_index_stream_, length_str);
                 prefix_sum_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
-                key_index_info_map_.insert_or_replace(key_str, make_pair(prefix_sum_index_, length_));
+                yche_map_.insert_or_replace(key_str, make_pair(prefix_sum_index_, length_));
             }
         }
         prefix_sum_index_ = prefix_sum_index_ + length_;
@@ -109,11 +109,11 @@ public:
     }
 
     inline string get(string key) {
-        if (key_index_info_map_.find(key) == nullptr) {
+        if (yche_map_.find(key) == nullptr) {
             return "NULL";
         }
         else {
-            auto *index_pair = key_index_info_map_.find(key);
+            auto *index_pair = yche_map_.find(key);
             db_stream_.seekg(index_pair->first, ios::beg);
             db_stream_.read(value_buffer, index_pair->second);
             return string(value_buffer, 0, index_pair->second);
@@ -146,7 +146,7 @@ public:
 
         memcpy(db_mmap_ + prefix_sum_index_, value.c_str(), length_);
 
-        key_index_info_map_.insert_or_replace(key, make_pair(prefix_sum_index_, length_));
+        yche_map_.insert_or_replace(key, make_pair(prefix_sum_index_, length_));
         prefix_sum_index_ += length_;
     }
 };

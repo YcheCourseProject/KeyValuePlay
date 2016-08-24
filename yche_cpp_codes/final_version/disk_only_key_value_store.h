@@ -75,7 +75,7 @@ public:
 
 class Answer {
 private:
-    unordered_map<string, pair<int, int>> key_index_info_map_;
+    unordered_map<string, pair<int, int>> yche_map_;
     fstream key_index_stream_;
     fstream db_stream_;
     circular_buff *circular_buff_ptr_;
@@ -102,7 +102,7 @@ private:
                     init_circular_buffer(length_);
                     is_first_in_ = false;
                 }
-                key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
+                yche_map_[key_str] = make_pair(prefix_sum_index_, length_);
             }
         }
         prefix_sum_index_ = prefix_sum_index_ + length_;
@@ -111,11 +111,11 @@ private:
 
     inline void init_map_info(int length) {
         if (length < 500) {
-            key_index_info_map_.reserve(60000);
+            yche_map_.reserve(60000);
         } else if (length < 5000) {
-            key_index_info_map_.reserve(1500000);
+            yche_map_.reserve(1500000);
         } else {
-            key_index_info_map_.reserve(60000);
+            yche_map_.reserve(60000);
         }
     }
 
@@ -143,11 +143,11 @@ public:
     }
 
     inline string get(string key) {
-        if (key_index_info_map_.find(key) == key_index_info_map_.end()) {
+        if (yche_map_.find(key) == yche_map_.end()) {
             return "NULL";
         }
         else {
-            auto &index_pair = key_index_info_map_[key];
+            auto &index_pair = yche_map_[key];
             auto ptr = circular_buff_ptr_->peek_info(index_pair.first);
             if (ptr != nullptr) {
                 cout << "Hit" << endl;
@@ -177,7 +177,7 @@ public:
         db_stream_ << value << flush;
 
         circular_buff_ptr_->push_back(value.c_str(), length_);
-        key_index_info_map_[key] = make_pair(prefix_sum_index_, length_);
+        yche_map_[key] = make_pair(prefix_sum_index_, length_);
         prefix_sum_index_ += length_;
 
     }

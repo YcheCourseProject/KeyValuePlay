@@ -41,7 +41,7 @@ void trim_right_blank(string &to_trim_string) {
 
 class Answer {
 private:
-    unordered_map<string, pair<uint32_t, uint16_t >> key_index_info_map_;
+    unordered_map<string, pair<uint32_t, uint16_t >> yche_map_;
     char *key_index_mmap_;
     char *db_value_mmap_;
     char *db_value_buf_;
@@ -73,7 +73,7 @@ private:
                 key_count_++;
                 prefix_sum_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
                 length_ = deserialize<uint16_t>(key_index_mmap_ + i * 77 + 74);
-                key_index_info_map_[key_str] = make_pair(prefix_sum_index_, length_);
+                yche_map_[key_str] = make_pair(prefix_sum_index_, length_);
             } else {
                 break;
             }
@@ -91,7 +91,7 @@ private:
 
 public:
     Answer() {
-        key_index_info_map_.reserve(60000);
+        yche_map_.reserve(60000);
         serialization_buf_ = new char[4];
         db_value_buf_ = new char[SMALL_DB_LENGTH];
         read_index_info();
@@ -99,18 +99,18 @@ public:
     }
 
     inline string get(string key) {
-        if (key_index_info_map_.find(key) == key_index_info_map_.end()) {
+        if (yche_map_.find(key) == yche_map_.end()) {
             return "NULL";
         }
         else {
-            auto index_pair = key_index_info_map_[key];
+            auto index_pair = yche_map_[key];
             return string(db_value_buf_ + index_pair.first, 0, index_pair.second);
         }
     }
 
     inline void put(string key, string value) {
         length_ = value.size();
-        key_index_info_map_[key] = make_pair(prefix_sum_index_, length_);
+        yche_map_[key] = make_pair(prefix_sum_index_, length_);
 
         char *ptr = key_index_mmap_ + key_count_ * 77;
         memcpy(ptr, key.c_str(), key.size());
