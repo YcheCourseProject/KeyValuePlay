@@ -5,7 +5,6 @@
 #ifndef KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
 #define KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
 
-#include <unordered_map>
 #include <algorithm>
 #include <string>
 #include <fstream>
