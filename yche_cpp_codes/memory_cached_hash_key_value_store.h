@@ -113,7 +113,7 @@ std::hash<string> hash_func;
 template<size_t slot_num = DEFAULT_HASH_TABLE_SLOT_SIZE>
 class yche_map {
 private:
-    vector<pair<string, string>> my_hash_table_;
+    vector<pair<string, string>> hash_table_;
     string value_result_string_;
     size_t current_size_{0};
     size_t slot_max_size_{slot_num};
@@ -126,16 +126,16 @@ private:
         slot_max_size_ *= 2;
         my_hash_table_building.resize(slot_max_size_);
         for (size_t previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
-            if (my_hash_table_[previous_index].first.size() > 0) {
-                auto new_index = HASH_FUNC(my_hash_table_[previous_index].first) % slot_max_size_;
+            if (hash_table_[previous_index].first.size() > 0) {
+                auto new_index = HASH_FUNC(hash_table_[previous_index].first) % slot_max_size_;
                 for (; my_hash_table_building[new_index].first.size() != 0;
                        new_index = (++new_index) % slot_max_size_) {
                 }
-                my_hash_table_building[new_index] = std::move(my_hash_table_[previous_index]);
+                my_hash_table_building[new_index] = std::move(hash_table_[previous_index]);
             }
 
         }
-        my_hash_table_ = std::move(my_hash_table_building);
+        hash_table_ = std::move(my_hash_table_building);
     }
 
     inline void write_key_value_to_file(const string &key, const string &value, const size_t &hash_result) {
@@ -195,14 +195,14 @@ public:
     char index_chars_array_[4];
     vector<int32_t> index_array_;
 
-    yche_map() : my_hash_table_(slot_num) {}
+    yche_map() : hash_table_(slot_num) {}
 
     virtual ~yche_map() {
         delete[]read_buffer_;
     }
 
     void inline resize(size_t size) {
-        my_hash_table_.resize(size);
+        hash_table_.resize(size);
     }
 
     void inline read_indices_into_index_array() {
@@ -244,9 +244,9 @@ public:
         auto hash_result = HASH_FUNC(key);
         //linear probing, judge if there is a existence in memory
         for (auto index = hash_result % slot_max_size_;
-             my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                return &my_hash_table_[index].second;
+             hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                return &hash_table_[index].second;
             }
         }
         //if in-memory hash_table is full search in file, read file
@@ -262,16 +262,16 @@ public:
 
         //update in-memory hash table
         auto index = hash_result % slot_max_size_;
-        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                my_hash_table_[index].second = value;
+        for (; hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                hash_table_[index].second = value;
                 return;
             }
         }
         //not hit in memory, judge whether memory is full to decide whether continuing insertion
         if (is_current_in_memory_table_full_ == false) {
-            my_hash_table_[index].first = key;
-            my_hash_table_[index].second = value;
+            hash_table_[index].first = key;
+            hash_table_[index].second = value;
             ++current_size_;
             if (current_size_ / slot_max_size_ > LOAD_FACTOR_THRESHOLD) {
                 if (slot_max_size_ * 2 < data_set_alignment_info_ptr_->hash_in_memory_tuple_size_)

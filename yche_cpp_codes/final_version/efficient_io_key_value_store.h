@@ -33,18 +33,18 @@ hash<string> hash_func;
 template<typename T, size_t slot_num = 900000>
 class yche_map {
 private:
-    vector<pair<string, T>> my_hash_table_;
+    vector<pair<string, T>> hash_table_;
     size_t current_size_{0};
     size_t slot_max_size_{slot_num};
 
 public:
-    inline yche_map() : my_hash_table_(slot_num) {}
+    inline yche_map() : hash_table_(slot_num) {}
 
     inline T *find(const string &key) {
         auto index = hash_func(key) % slot_max_size_;
-        for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                return &my_hash_table_[index].second;
+        for (; hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                return &hash_table_[index].second;
             }
         }
         return nullptr;
@@ -52,14 +52,14 @@ public:
 
     inline void insert_or_replace(const string &key, const T &value) {
         auto index = hash_func(key) % slot_max_size_;
-        for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                my_hash_table_[index].second = value;
+        for (; hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                hash_table_[index].second = value;
                 return;
             }
         }
-        my_hash_table_[index].first = key;
-        my_hash_table_[index].second = value;
+        hash_table_[index].first = key;
+        hash_table_[index].second = value;
     }
 };
 
@@ -71,7 +71,7 @@ private:
     int db_file_descriptor_;
     char *db_mmap_;
     char *db_read_mmap_;
-    int prefix_sum_index_{0};
+    int value_index_{0};
     int length_{0};
     char *value_buffer;
 
@@ -86,12 +86,12 @@ private:
             if (key_index_stream_.good()) {
                 getline(key_index_stream_, prefix_sum_index_str);
                 getline(key_index_stream_, length_str);
-                prefix_sum_index_ = stoi(prefix_sum_index_str);
+                value_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
-                yche_map_.insert_or_replace(key_str, make_pair(prefix_sum_index_, length_));
+                yche_map_.insert_or_replace(key_str, make_pair(value_index_, length_));
             }
         }
-        prefix_sum_index_ = prefix_sum_index_ + length_;
+        value_index_ = value_index_ + length_;
         key_index_stream_.clear();
     }
 
@@ -141,13 +141,13 @@ public:
             is_initialized_ = true;
         }
         key_index_stream_ << key << "\n";
-        key_index_stream_ << prefix_sum_index_ << "\n";
+        key_index_stream_ << value_index_ << "\n";
         key_index_stream_ << length_ << "\n" << flush;
 
-        memcpy(db_mmap_ + prefix_sum_index_, value.c_str(), length_);
+        memcpy(db_mmap_ + value_index_, value.c_str(), length_);
 
-        yche_map_.insert_or_replace(key, make_pair(prefix_sum_index_, length_));
-        prefix_sum_index_ += length_;
+        yche_map_.insert_or_replace(key, make_pair(value_index_, length_));
+        value_index_ += length_;
     }
 };
 

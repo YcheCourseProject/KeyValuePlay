@@ -39,7 +39,7 @@ std::hash<string> hash_func;
 template<typename T>
 class yche_map {
 private:
-    vector<pair<string, T>> my_hash_table_;
+    vector<pair<string, T>> hash_table_;
     size_t current_size_{0};
     size_t slot_max_size_{DEFAULT_HASH_SLOT_SIZE};
 
@@ -48,15 +48,15 @@ private:
         slot_max_size_ *= 2;
         my_hash_table_building.resize(slot_max_size_);
         for (auto previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
-            if (my_hash_table_[previous_index].first.size() > 0) {
-                auto new_index = HASH_FUNC(my_hash_table_[previous_index].first) % slot_max_size_;
+            if (hash_table_[previous_index].first.size() > 0) {
+                auto new_index = HASH_FUNC(hash_table_[previous_index].first) % slot_max_size_;
                 for (; my_hash_table_building[new_index].first.size() != 0;
                        new_index = (++new_index) % slot_max_size_) {
                 }
-                my_hash_table_building[new_index] = std::move(my_hash_table_[previous_index]);
+                my_hash_table_building[new_index] = std::move(hash_table_[previous_index]);
             }
         }
-        my_hash_table_ = std::move(my_hash_table_building);
+        hash_table_ = std::move(my_hash_table_building);
     }
 
 public:
@@ -65,7 +65,7 @@ public:
     }
 
     inline void reserve(int size) {
-        my_hash_table_.resize(size);
+        hash_table_.resize(size);
     }
 
     inline size_t size() {
@@ -75,9 +75,9 @@ public:
     inline T *find(const string &key) {
         auto index = HASH_FUNC(key) % slot_max_size_;
         //linear probing
-        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                return &my_hash_table_[index].second;
+        for (; hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                return &hash_table_[index].second;
             }
         }
         return nullptr;
@@ -85,15 +85,15 @@ public:
 
     inline void insert_or_replace(const string &key, const T &value) {
         auto index = HASH_FUNC(key) % slot_max_size_;
-        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                my_hash_table_[index].second = value;
+        for (; hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                hash_table_[index].second = value;
                 return;
             }
         }
         ++current_size_;
-        my_hash_table_[index].first = key;
-        my_hash_table_[index].second = value;
+        hash_table_[index].first = key;
+        hash_table_[index].second = value;
         if (current_size_ / slot_max_size_ > 0.8) {
             rebuild();
         }

@@ -31,21 +31,21 @@ inline size_t get_file_size(int file_descriptor) {
 template<size_t slot_num = 200000>
 class yche_map {
 private:
-    vector<pair<string, string>> my_hash_table_;
+    vector<pair<string, string>> hash_table_;
     size_t slot_max_size_{slot_num};
 
 public:
-    inline yche_map() : my_hash_table_(slot_num) {}
+    inline yche_map() : hash_table_(slot_num) {}
 
     inline void reserve(int size) {
-        my_hash_table_.resize(size);
+        hash_table_.resize(size);
     }
 
     inline string *find(const string &key) {
         auto index = hash_func(key) % slot_max_size_;
-        for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                return &my_hash_table_[index].second;
+        for (; hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                return &hash_table_[index].second;
             }
         }
         return nullptr;
@@ -53,14 +53,14 @@ public:
 
     inline void insert_or_replace(const string &key, const string &value) {
         auto index = hash_func(key) % slot_max_size_;
-        for (; my_hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                my_hash_table_[index].second = value;
+        for (; hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                hash_table_[index].second = value;
                 return;
             }
         }
-        my_hash_table_[index].first = key;
-        my_hash_table_[index].second = value;
+        hash_table_[index].first = key;
+        hash_table_[index].second = value;
     }
 };
 

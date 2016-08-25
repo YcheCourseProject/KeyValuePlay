@@ -80,7 +80,7 @@ private:
     fstream db_stream_;
     circular_buff *circular_buff_ptr_;
 
-    int prefix_sum_index_{0};
+    int value_index_{0};
     int length_{0};
 
     char *value_buffer;
@@ -95,17 +95,17 @@ private:
             if (key_index_stream_.good()) {
                 getline(key_index_stream_, prefix_sum_index_str);
                 getline(key_index_stream_, length_str);
-                prefix_sum_index_ = stoi(prefix_sum_index_str);
+                value_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
                 if (is_first_in_) {
                     init_map_info(length_);
                     init_circular_buffer(length_);
                     is_first_in_ = false;
                 }
-                yche_map_[key_str] = make_pair(prefix_sum_index_, length_);
+                yche_map_[key_str] = make_pair(value_index_, length_);
             }
         }
-        prefix_sum_index_ = prefix_sum_index_ + length_;
+        value_index_ = value_index_ + length_;
         key_index_stream_.clear();
     }
 
@@ -121,11 +121,11 @@ private:
 
     inline void init_circular_buffer(int length) {
         if (length < 500) {
-            circular_buff_ptr_ = new circular_buff(SMALL_BUFFER_SIZE, 160, prefix_sum_index_);
+            circular_buff_ptr_ = new circular_buff(SMALL_BUFFER_SIZE, 160, value_index_);
         } else if (length < 5000) {
-            circular_buff_ptr_ = new circular_buff(MEDIUM_BUFFER_SIZE, 3000, prefix_sum_index_);
+            circular_buff_ptr_ = new circular_buff(MEDIUM_BUFFER_SIZE, 3000, value_index_);
         } else {
-            circular_buff_ptr_ = new circular_buff(BIG_BUFFER_SIZE, 30000, prefix_sum_index_);
+            circular_buff_ptr_ = new circular_buff(BIG_BUFFER_SIZE, 30000, value_index_);
         }
     }
 
@@ -170,15 +170,15 @@ public:
             is_first_in_ = false;
         }
         key_index_stream_ << key << "\n";
-        key_index_stream_ << prefix_sum_index_ << "\n";
+        key_index_stream_ << value_index_ << "\n";
         key_index_stream_ << length_ << "\n" << flush;
 
         db_stream_.seekp(0, ios::end);
         db_stream_ << value << flush;
 
         circular_buff_ptr_->push_back(value.c_str(), length_);
-        yche_map_[key] = make_pair(prefix_sum_index_, length_);
-        prefix_sum_index_ += length_;
+        yche_map_[key] = make_pair(value_index_, length_);
+        value_index_ += length_;
 
     }
 };

@@ -42,7 +42,7 @@ struct SerializationInfo {
 
 class yche_map {
 private:
-    vector<pair<string, string>> my_hash_table_;
+    vector<pair<string, string>> hash_table_;
     size_t current_size_{0};
     size_t slot_max_size_{0};
 
@@ -51,28 +51,28 @@ private:
         slot_max_size_ *= 2;
         my_hash_table_building.resize(slot_max_size_);
         for (auto previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
-            if (my_hash_table_[previous_index].first.size() > 0) {
-                auto new_index = HASH_FUNC(my_hash_table_[previous_index].first) % slot_max_size_;
+            if (hash_table_[previous_index].first.size() > 0) {
+                auto new_index = HASH_FUNC(hash_table_[previous_index].first) % slot_max_size_;
                 for (; my_hash_table_building[new_index].first.size() != 0;
                        new_index = (++new_index) % slot_max_size_) {
                 }
-                my_hash_table_building[new_index] = std::move(my_hash_table_[previous_index]);
+                my_hash_table_building[new_index] = std::move(hash_table_[previous_index]);
             }
 
         }
-        my_hash_table_ = std::move(my_hash_table_building);
+        hash_table_ = std::move(my_hash_table_building);
     }
 
 public:
     yche_map() = default;
 
-    yche_map(size_t slot_num) : my_hash_table_(slot_num) {}
+    yche_map(size_t slot_num) : hash_table_(slot_num) {}
 
     void reset_info(SerializationInfo &serialization_info) {
-        my_hash_table_.resize(serialization_info.slot_size_);
+        hash_table_.resize(serialization_info.slot_size_);
         slot_max_size_ = serialization_info.slot_size_;
         for (auto &pair_info:serialization_info.pair_info_vec_) {
-            my_hash_table_[pair_info.index_] = std::move(pair_info.key_value_pair_);
+            hash_table_[pair_info.index_] = std::move(pair_info.key_value_pair_);
         }
     }
 
@@ -82,9 +82,9 @@ public:
 
     inline string *find(const string &key) {
         auto index = HASH_FUNC(key) % slot_max_size_;
-        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                return &my_hash_table_[index].second;
+        for (; hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                return &hash_table_[index].second;
             }
         }
         return nullptr;
@@ -92,15 +92,15 @@ public:
 
     inline void insert_or_replace(const string &key, const string &value) {
         auto index = HASH_FUNC(key) % slot_max_size_;
-        for (; my_hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
-            if (my_hash_table_[index].first == key) {
-                my_hash_table_[index].second = value;
+        for (; hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+            if (hash_table_[index].first == key) {
+                hash_table_[index].second = value;
                 return;
             }
         }
         ++current_size_;
-        my_hash_table_[index].first = key;
-        my_hash_table_[index].second = value;
+        hash_table_[index].first = key;
+        hash_table_[index].second = value;
         if (current_size_ / slot_max_size_ > 0.7) {
             rebuild();
         }
@@ -110,7 +110,7 @@ public:
         stringstream ss;
         ss << current_size_ << "\n" << slot_max_size_ << "\n";
         for (auto i = 0; i < slot_max_size_; i++) {
-            ss << i << "\n" << my_hash_table_[i].first << "\n" << my_hash_table_[i].second << "\n";
+            ss << i << "\n" << hash_table_[i].first << "\n" << hash_table_[i].second << "\n";
         }
         return ss.str();
     }

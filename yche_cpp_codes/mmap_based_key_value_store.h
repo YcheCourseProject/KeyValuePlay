@@ -51,7 +51,7 @@ private:
     int db_file_descriptor_;
 
     int key_count_{0};
-    uint32_t prefix_sum_index_{0};
+    uint32_t value_index_{0};
     uint16_t length_{0};
     bool is_first_in_{true};
 
@@ -71,14 +71,14 @@ private:
                     is_first_in_ = false;
                 }
                 key_count_++;
-                prefix_sum_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
+                value_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
                 length_ = deserialize<uint16_t>(key_index_mmap_ + i * 77 + 74);
-                yche_map_[key_str] = make_pair(prefix_sum_index_, length_);
+                yche_map_[key_str] = make_pair(value_index_, length_);
             } else {
                 break;
             }
         }
-        prefix_sum_index_ = prefix_sum_index_ + length_;
+        value_index_ = value_index_ + length_;
     }
 
     inline void read_db_info() {
@@ -110,19 +110,19 @@ public:
 
     inline void put(string key, string value) {
         length_ = value.size();
-        yche_map_[key] = make_pair(prefix_sum_index_, length_);
+        yche_map_[key] = make_pair(value_index_, length_);
 
         char *ptr = key_index_mmap_ + key_count_ * 77;
         memcpy(ptr, key.c_str(), key.size());
-        serialize(serialization_buf_, prefix_sum_index_);
+        serialize(serialization_buf_, value_index_);
         memcpy(ptr + 70, serialization_buf_, 4);
         serialize(serialization_buf_, length_);
         memcpy(ptr + 74, serialization_buf_, 2);
         ptr[76] = '\n';
-        memcpy(db_value_mmap_ + prefix_sum_index_, value.c_str(), length_);
-        memcpy(db_value_buf_ + prefix_sum_index_, value.c_str(), length_);
+        memcpy(db_value_mmap_ + value_index_, value.c_str(), length_);
+        memcpy(db_value_buf_ + value_index_, value.c_str(), length_);
 
-        prefix_sum_index_ += length_;
+        value_index_ += length_;
         ++key_count_;
     }
 };
