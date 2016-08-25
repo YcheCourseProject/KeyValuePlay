@@ -116,20 +116,20 @@ private:
     vector<pair<string, string>> hash_table_;
     string value_result_string_;
     size_t current_size_{0};
-    size_t slot_max_size_{slot_num};
+    size_t max_slot_size_{slot_num};
 
     //structure for persistence
     bool is_current_in_memory_table_full_{false};
 
     inline void rebuild() {
         vector<pair<string, string>> my_hash_table_building;
-        slot_max_size_ *= 2;
-        my_hash_table_building.resize(slot_max_size_);
-        for (size_t previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
+        max_slot_size_ *= 2;
+        my_hash_table_building.resize(max_slot_size_);
+        for (size_t previous_index = 0; previous_index < max_slot_size_ / 2; ++previous_index) {
             if (hash_table_[previous_index].first.size() > 0) {
-                auto new_index = HASH_FUNC(hash_table_[previous_index].first) % slot_max_size_;
+                auto new_index = HASH_FUNC(hash_table_[previous_index].first) % max_slot_size_;
                 for (; my_hash_table_building[new_index].first.size() != 0;
-                       new_index = (++new_index) % slot_max_size_) {
+                       new_index = (++new_index) % max_slot_size_) {
                 }
                 my_hash_table_building[new_index] = std::move(hash_table_[previous_index]);
             }
@@ -243,8 +243,8 @@ public:
     inline string *find(const string &key) {
         auto hash_result = HASH_FUNC(key);
         //linear probing, judge if there is a existence in memory
-        for (auto index = hash_result % slot_max_size_;
-             hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+        for (auto index = hash_result % max_slot_size_;
+             hash_table_[index].first.size() != 0; index = (++index) % max_slot_size_) {
             if (hash_table_[index].first == key) {
                 return &hash_table_[index].second;
             }
@@ -261,8 +261,8 @@ public:
         write_key_value_to_file(key, value, hash_result);
 
         //update in-memory hash table
-        auto index = hash_result % slot_max_size_;
-        for (; hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+        auto index = hash_result % max_slot_size_;
+        for (; hash_table_[index].first.size() != 0; index = (++index) % max_slot_size_) {
             if (hash_table_[index].first == key) {
                 hash_table_[index].second = value;
                 return;
@@ -273,8 +273,8 @@ public:
             hash_table_[index].first = key;
             hash_table_[index].second = value;
             ++current_size_;
-            if (current_size_ / slot_max_size_ > LOAD_FACTOR_THRESHOLD) {
-                if (slot_max_size_ * 2 < data_set_alignment_info_ptr_->hash_in_memory_tuple_size_)
+            if (current_size_ / max_slot_size_ > LOAD_FACTOR_THRESHOLD) {
+                if (max_slot_size_ * 2 < data_set_alignment_info_ptr_->hash_in_memory_tuple_size_)
                     rebuild();
                 else
                     is_current_in_memory_table_full_ = true;

@@ -41,17 +41,17 @@ class yche_map {
 private:
     vector<pair<string, T>> hash_table_;
     size_t current_size_{0};
-    size_t slot_max_size_{DEFAULT_HASH_SLOT_SIZE};
+    size_t max_slot_size_{DEFAULT_HASH_SLOT_SIZE};
 
     inline void rebuild() {
         vector<pair<string, T>> my_hash_table_building;
-        slot_max_size_ *= 2;
-        my_hash_table_building.resize(slot_max_size_);
-        for (auto previous_index = 0; previous_index < slot_max_size_ / 2; ++previous_index) {
+        max_slot_size_ *= 2;
+        my_hash_table_building.resize(max_slot_size_);
+        for (auto previous_index = 0; previous_index < max_slot_size_ / 2; ++previous_index) {
             if (hash_table_[previous_index].first.size() > 0) {
-                auto new_index = HASH_FUNC(hash_table_[previous_index].first) % slot_max_size_;
+                auto new_index = HASH_FUNC(hash_table_[previous_index].first) % max_slot_size_;
                 for (; my_hash_table_building[new_index].first.size() != 0;
-                       new_index = (++new_index) % slot_max_size_) {
+                       new_index = (++new_index) % max_slot_size_) {
                 }
                 my_hash_table_building[new_index] = std::move(hash_table_[previous_index]);
             }
@@ -73,9 +73,9 @@ public:
     }
 
     inline T *find(const string &key) {
-        auto index = HASH_FUNC(key) % slot_max_size_;
+        auto index = HASH_FUNC(key) % max_slot_size_;
         //linear probing
-        for (; hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+        for (; hash_table_[index].first.size() != 0; index = (++index) % max_slot_size_) {
             if (hash_table_[index].first == key) {
                 return &hash_table_[index].second;
             }
@@ -84,8 +84,8 @@ public:
     }
 
     inline void insert_or_replace(const string &key, const T &value) {
-        auto index = HASH_FUNC(key) % slot_max_size_;
-        for (; hash_table_[index].first.size() != 0; index = (++index) % slot_max_size_) {
+        auto index = HASH_FUNC(key) % max_slot_size_;
+        for (; hash_table_[index].first.size() != 0; index = (++index) % max_slot_size_) {
             if (hash_table_[index].first == key) {
                 hash_table_[index].second = value;
                 return;
@@ -94,7 +94,7 @@ public:
         ++current_size_;
         hash_table_[index].first = key;
         hash_table_[index].second = value;
-        if (current_size_ / slot_max_size_ > 0.8) {
+        if (current_size_ / max_slot_size_ > 0.8) {
             rebuild();
         }
     }
@@ -104,7 +104,7 @@ class Answer {
 private:
     yche_map<int> yche_map_;
     yche_map<string> key_value_map_;
-    fstream key_index_stream_;
+    fstream index_stream_;
     fstream db_stream_;
     int db_file_index_{0};
 
@@ -138,19 +138,19 @@ private:
     inline void read_index_info() {
         string key_str;
         string index_str;
-        for (; key_index_stream_.good();) {
-            getline(key_index_stream_, key_str);
-            if (key_index_stream_.good()) {
-                getline(key_index_stream_, index_str);
+        for (; index_stream_.good();) {
+            getline(index_stream_, key_str);
+            if (index_stream_.good()) {
+                getline(index_stream_, index_str);
                 yche_map_.insert_or_replace(key_str, stoi(index_str));
                 db_file_index_++;
             }
         }
-        key_index_stream_.clear();
+        index_stream_.clear();
     }
 
     inline void read_db_info() {
-        key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
+        index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(SMALL_DB_NAME, ios::in | ios::out | ios::binary);
         if (db_stream_.good() == true) {
             key_alignment_ = SMALL_KEY_ALIGNMENT;
@@ -261,7 +261,7 @@ public:
             is_first_in_ = false;
         }
         if (yche_map_.find(key) == nullptr) {
-            key_index_stream_ << key << "\n" << to_string(db_file_index_) << "\n" << flush;
+            index_stream_ << key << "\n" << to_string(db_file_index_) << "\n" << flush;
             yche_map_.insert_or_replace(key, db_file_index_);
             db_file_index_++;
             db_stream_.seekp(0, ios::end);

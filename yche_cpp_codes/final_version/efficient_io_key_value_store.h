@@ -35,14 +35,14 @@ class yche_map {
 private:
     vector<pair<string, T>> hash_table_;
     size_t current_size_{0};
-    size_t slot_max_size_{slot_num};
+    size_t max_slot_size_{slot_num};
 
 public:
     inline yche_map() : hash_table_(slot_num) {}
 
     inline T *find(const string &key) {
-        auto index = hash_func(key) % slot_max_size_;
-        for (; hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+        auto index = hash_func(key) % max_slot_size_;
+        for (; hash_table_[index].first.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].first == key) {
                 return &hash_table_[index].second;
             }
@@ -51,8 +51,8 @@ public:
     }
 
     inline void insert_or_replace(const string &key, const T &value) {
-        auto index = hash_func(key) % slot_max_size_;
-        for (; hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+        auto index = hash_func(key) % max_slot_size_;
+        for (; hash_table_[index].first.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].first == key) {
                 hash_table_[index].second = value;
                 return;
@@ -66,7 +66,7 @@ public:
 class Answer {
 private:
     yche_map<pair<int, int>> yche_map_;
-    fstream key_index_stream_;
+    fstream index_stream_;
     fstream db_stream_;
     int db_file_descriptor_;
     char *db_mmap_;
@@ -81,24 +81,24 @@ private:
         string key_str;
         string prefix_sum_index_str;
         string length_str;
-        for (; key_index_stream_.good();) {
-            getline(key_index_stream_, key_str);
-            if (key_index_stream_.good()) {
-                getline(key_index_stream_, prefix_sum_index_str);
-                getline(key_index_stream_, length_str);
+        for (; index_stream_.good();) {
+            getline(index_stream_, key_str);
+            if (index_stream_.good()) {
+                getline(index_stream_, prefix_sum_index_str);
+                getline(index_stream_, length_str);
                 value_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
                 yche_map_.insert_or_replace(key_str, make_pair(value_index_, length_));
             }
         }
         value_index_ = value_index_ + length_;
-        key_index_stream_.clear();
+        index_stream_.clear();
     }
 
 public:
     Answer() {
         value_buffer = new char[1024 * 32];
-        key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
+        index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_file_descriptor_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
         db_stream_.open(DB_NAME, ios::in | ios::binary);
         read_index_info();
@@ -140,9 +140,9 @@ public:
             db_read_mmap_ = (char *) mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, db_file_descriptor_, 0);
             is_initialized_ = true;
         }
-        key_index_stream_ << key << "\n";
-        key_index_stream_ << value_index_ << "\n";
-        key_index_stream_ << length_ << "\n" << flush;
+        index_stream_ << key << "\n";
+        index_stream_ << value_index_ << "\n";
+        index_stream_ << length_ << "\n" << flush;
 
         memcpy(db_mmap_ + value_index_, value.c_str(), length_);
 

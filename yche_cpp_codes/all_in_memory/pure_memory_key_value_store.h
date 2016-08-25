@@ -18,7 +18,7 @@
 
 using namespace std;
 
-#define FILE_NAME  "tuple_transaction.db"
+#define FILE_NAME  "transaction.db"
 
 hash<string> hash_func;
 
@@ -32,7 +32,7 @@ template<size_t slot_num = 200000>
 class yche_map {
 private:
     vector<pair<string, string>> hash_table_;
-    size_t slot_max_size_{slot_num};
+    size_t max_slot_size_{slot_num};
 
 public:
     inline yche_map() : hash_table_(slot_num) {}
@@ -42,8 +42,8 @@ public:
     }
 
     inline string *find(const string &key) {
-        auto index = hash_func(key) % slot_max_size_;
-        for (; hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+        auto index = hash_func(key) % max_slot_size_;
+        for (; hash_table_[index].first.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].first == key) {
                 return &hash_table_[index].second;
             }
@@ -52,8 +52,8 @@ public:
     }
 
     inline void insert_or_replace(const string &key, const string &value) {
-        auto index = hash_func(key) % slot_max_size_;
-        for (; hash_table_[index].first.size() != 0; index = (index + 1) % slot_max_size_) {
+        auto index = hash_func(key) % max_slot_size_;
+        for (; hash_table_[index].first.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].first == key) {
                 hash_table_[index].second = value;
                 return;
@@ -90,7 +90,7 @@ public:
         mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
-    inline string get(string &&key) {
+    inline string get(string key) {
         auto result = yche_map_.find(key);
         if (result != nullptr) {
             return *result;
@@ -100,7 +100,7 @@ public:
         }
     }
 
-    inline void put(string &&key, string &&value) {
+    inline void put(string key, string value) {
         memcpy(mmap_ + index_, key.c_str(), key.size());
         index_ += key.size();
         mmap_[index_] = '\n';

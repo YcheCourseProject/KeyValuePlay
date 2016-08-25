@@ -76,7 +76,7 @@ public:
 class Answer {
 private:
     unordered_map<string, pair<int, int>> yche_map_;
-    fstream key_index_stream_;
+    fstream index_stream_;
     fstream db_stream_;
     circular_buff *circular_buff_ptr_;
 
@@ -90,11 +90,11 @@ private:
         string key_str;
         string prefix_sum_index_str;
         string length_str;
-        for (; key_index_stream_.good();) {
-            getline(key_index_stream_, key_str);
-            if (key_index_stream_.good()) {
-                getline(key_index_stream_, prefix_sum_index_str);
-                getline(key_index_stream_, length_str);
+        for (; index_stream_.good();) {
+            getline(index_stream_, key_str);
+            if (index_stream_.good()) {
+                getline(index_stream_, prefix_sum_index_str);
+                getline(index_stream_, length_str);
                 value_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
                 if (is_first_in_) {
@@ -106,7 +106,7 @@ private:
             }
         }
         value_index_ = value_index_ + length_;
-        key_index_stream_.clear();
+        index_stream_.clear();
     }
 
     inline void init_map_info(int length) {
@@ -132,7 +132,7 @@ private:
 public:
     Answer() {
         value_buffer = new char[1024 * 32];
-        key_index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
+        index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
         read_index_info();
     }
@@ -169,9 +169,9 @@ public:
             init_circular_buffer(length_);
             is_first_in_ = false;
         }
-        key_index_stream_ << key << "\n";
-        key_index_stream_ << value_index_ << "\n";
-        key_index_stream_ << length_ << "\n" << flush;
+        index_stream_ << key << "\n";
+        index_stream_ << value_index_ << "\n";
+        index_stream_ << length_ << "\n" << flush;
 
         db_stream_.seekp(0, ios::end);
         db_stream_ << value << flush;
