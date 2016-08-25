@@ -17,13 +17,19 @@ using namespace std;
 
 hash<string> hash_func;
 
+struct key_value_info {
+    string key_str_{""};
+    string value_str_{""};
+    int value_index_{0};
+    int value_length_{0};
+};
+
 template<size_t slot_num = 900000>
 class yche_map {
 private:
     fstream db_stream_;
 
-    vector<pair<string, pair<int, int>>> hash_table_;
-    vector<string> value_table_;
+    vector<key_value_info> hash_table_;
     char *value_buffer;
     string result_str_;
 
@@ -32,7 +38,7 @@ private:
     size_t max_slot_size_{slot_num};
 
 public:
-    inline yche_map() : hash_table_(slot_num), value_table_(slot_num) {
+    inline yche_map() : hash_table_(slot_num) {
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
         value_buffer = new char[1024 * 32];
     }
@@ -47,14 +53,14 @@ public:
 
     inline string *find(const string &key) {
         auto index = hash_func(key) % max_slot_size_;
-        for (; hash_table_[index].first.size() != 0; index = (index + 1) % max_slot_size_) {
-            if (hash_table_[index].first == key) {
-                if (value_table_[index].size() > 0)
-                    return &value_table_[index];
+        for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
+            if (hash_table_[index].key_str_ == key) {
+                if (hash_table_[index].value_str_.size() > 0)
+                    return &hash_table_[index].value_str_;
                 else {
-                    db_stream_.seekg(hash_table_[index].second.first, ios::beg);
-                    db_stream_.read(value_buffer, hash_table_[index].second.second);
-                    result_str_ = string(value_buffer, 0, hash_table_[index].second.second);
+                    db_stream_.seekg(hash_table_[index].value_index_, ios::beg);
+                    db_stream_.read(value_buffer, hash_table_[index].value_length_);
+                    result_str_ = string(value_buffer, 0, hash_table_[index].value_length_);
                     return &result_str_;
                 }
             }
@@ -69,20 +75,22 @@ public:
             db_stream_ << value << flush;
         }
         auto index = hash_func(key) % max_slot_size_;
-        for (; hash_table_[index].first.size() != 0; index = (index + 1) % max_slot_size_) {
-            if (hash_table_[index].first == key) {
-                hash_table_[index].second = make_pair(value_index, value_length);
-                if (value_table_[index].size() != 0)
-                    value_table_[index] = value;
+        for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
+            if (hash_table_[index].key_str_ == key) {
+                hash_table_[index].value_index_ = value_index;
+                hash_table_[index].value_length_ = value_length;
+                if (hash_table_[index].value_str_.size() != 0)
+                    hash_table_[index].value_str_ = move(value);
                 return;
             }
         }
-        hash_table_[index].first = key;
-        hash_table_[index].second = make_pair(value_index, value_length);
+        hash_table_[index].key_str_ = move(key);
+        hash_table_[index].value_index_ = value_index;
+        hash_table_[index].value_length_ = value_length;
 
         if (cur_cached_value_size_ < max_cached_value_size_) {
             ++cur_cached_value_size_;
-            value_table_[index] = value;
+            hash_table_[index].value_str_ = move(value);
         }
     }
 };
@@ -107,7 +115,7 @@ private:
                 getline(index_stream_, length_str);
                 value_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
-                int_map();
+                init_map();
                 yche_map_.insert_or_replace(key_str, value_index_, length_);
             }
         }
@@ -115,7 +123,7 @@ private:
         index_stream_.clear();
     }
 
-    inline void int_map() {
+    inline void init_map() {
         if (!is_init_) {
             if (length_ <= 3000)
                 yche_map_.set_max_cached_value_size(150000);
@@ -126,7 +134,7 @@ private:
     }
 
 public:
-    Answer() {
+    inline Answer() {
         read_index_info();
     }
 
@@ -142,7 +150,7 @@ public:
 
     inline void put(string key, string value) {
         length_ = value.size();
-        int_map();
+        init_map();
         index_stream_ << key << "\n" << value_index_ << "\n" << length_ << "\n" << flush;
 
         yche_map_.insert_or_replace(key, value_index_, length_, value, true);
