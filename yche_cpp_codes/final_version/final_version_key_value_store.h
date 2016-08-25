@@ -99,15 +99,21 @@ class Answer {
 private:
     yche_map<> yche_map_;
     fstream index_stream_;
+    fstream db_stream_;
     int value_index_{0};
     int length_{0};
+    int threshold_{0};
+
     bool is_init_{false};
 
     inline void read_index_info() {
+        char *value_buf_ = new char[32 * 1024];
         index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
+        db_stream_.open(DB_NAME, ios::in | ios::binary);
         string key_str;
         string prefix_sum_index_str;
         string length_str;
+        string value_str;
         for (; index_stream_.good();) {
             getline(index_stream_, key_str);
             if (index_stream_.good()) {
@@ -116,19 +122,35 @@ private:
                 value_index_ = stoi(prefix_sum_index_str);
                 length_ = stoi(length_str);
                 init_map();
-                yche_map_.insert_or_replace(key_str, value_index_, length_);
+                if (value_index_ >= threshold_) {
+                    db_stream_.seekg(value_index_, ios::beg);
+                    db_stream_.read(value_buf_, length_);
+                    value_str = string(value_buf_, 0, length_);
+                    yche_map_.insert_or_replace(key_str, value_index_, length_, value_str);
+                }
+                else
+                    yche_map_.insert_or_replace(key_str, value_index_, length_);
             }
         }
         value_index_ = value_index_ + length_;
+        delete[]value_buf_;
         index_stream_.clear();
     }
 
     inline void init_map() {
+        db_stream_.seekg(0, ios::end);
+        int file_size = db_stream_.tellg();
         if (!is_init_) {
-            if (length_ <= 3000)
-                yche_map_.set_max_cached_value_size(150000);
-            else
-                yche_map_.set_max_cached_value_size(4500);
+            if (length_ <= 160) {
+                yche_map_.set_max_cached_value_size(250000);
+            } else if (length_ <= 3000) {
+                yche_map_.set_max_cached_value_size(250000);
+                threshold_ = file_size - 150000000;
+            }
+            else {
+                yche_map_.set_max_cached_value_size(9000);
+                threshold_ = file_size - 100000000;
+            }
             is_init_ = true;
         }
     }
