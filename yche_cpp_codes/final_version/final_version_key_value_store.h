@@ -144,12 +144,12 @@ private:
             if (length_ <= 160) {
                 yche_map_.set_max_cached_value_size(250000);
             } else if (length_ <= 3000) {
-                yche_map_.set_max_cached_value_size(250000);
-                threshold_ = file_size - 150000000;
+                yche_map_.set_max_cached_value_size(300000);
+                threshold_ = file_size + 1;
             }
             else {
                 yche_map_.set_max_cached_value_size(9000);
-                threshold_ = file_size - 100000000;
+                threshold_ = file_size + 1;
             }
             is_init_ = true;
         }
