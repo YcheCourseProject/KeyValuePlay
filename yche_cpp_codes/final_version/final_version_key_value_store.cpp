@@ -23,6 +23,6 @@ void get_test() {
 int main() {
     Answer naive_store;
 
-//    basic_test();
+    basic_test();
     get_test();
 }

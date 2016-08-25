@@ -9,8 +9,14 @@
 #include <string>
 #include <fstream>
 
+#include <cstring>
+#include "sys/mman.h"
+#include <fcntl.h>
+#include <unistd.h>
+
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
+#define MMAP_ALIGN 4096 * 4096
 
 using namespace std;
 
@@ -27,8 +33,11 @@ template<size_t slot_num = 900000>
 class yche_map {
 private:
     fstream db_stream_;
+    int db_file_descriptor_;
+    int offset_{0};
 
     vector<key_value_info> hash_table_;
+    char *value_mmap_;
     char *value_buffer;
     string result_str_;
 
@@ -38,7 +47,10 @@ private:
 
 public:
     inline yche_map() : hash_table_(slot_num) {
-        db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
+        db_file_descriptor_ = open(DB_NAME, O_WRONLY | O_CREAT, 0660);
+        value_mmap_ = (char *) mmap(NULL, MMAP_ALIGN, PROT_WRITE, MAP_SHARED, db_file_descriptor_, offset_);
+        ftruncate(db_file_descriptor_, offset_ + MMAP_ALIGN);
+        db_stream_.open(DB_NAME, ios::in | ios::binary);
         value_buffer = new char[1024 * 32];
     }
 
@@ -70,8 +82,13 @@ public:
     inline void insert_or_replace(const string &key, int value_index, int value_length, const string value = "",
                                   bool is_write = false) {
         if (is_write) {
-            db_stream_.seekp(0, ios::end);
-            db_stream_ << value << flush;
+            if (value_index + value.size() - offset_ >= MMAP_ALIGN) {
+                offset_ += MMAP_ALIGN;
+                munmap(value_mmap_, MMAP_ALIGN);
+                ftruncate(db_file_descriptor_, offset_ + MMAP_ALIGN);
+                value_mmap_ = (char *) mmap(NULL, MMAP_ALIGN, PROT_WRITE, MAP_SHARED, db_file_descriptor_, offset_);
+            }
+            memcpy(value_mmap_ + value_index - offset_, value.c_str(), value.size());
         }
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
