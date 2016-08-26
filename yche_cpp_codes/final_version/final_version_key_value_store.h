@@ -7,8 +7,8 @@
 
 #include <algorithm>
 #include <string>
+#include <queue>
 #include <fstream>
-#include <iostream>
 
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
@@ -22,6 +22,7 @@ struct key_value_info {
     string value_str_{""};
     int value_index_{0};
     int value_length_{0};
+    int insert_count_{0};
 };
 
 template<size_t slot_num = 10>
@@ -30,12 +31,13 @@ private:
     fstream db_stream_;
 
     vector<key_value_info> hash_table_;
+    queue<int> slot_index_queue_;
     char *value_buffer;
     string result_str_;
 
-    size_t cur_cached_value_size_{0};
-    size_t max_cached_value_size_{1000};
     size_t max_slot_size_{slot_num};
+    size_t cur_cached_memory_size_{0};
+    size_t max_cached_memory_size_{1000};
 
 public:
     inline yche_map() : hash_table_(slot_num) {
@@ -52,8 +54,21 @@ public:
         delete[]value_buffer;
     }
 
-    inline void set_max_cached_value_size(int size) {
-        max_cached_value_size_ = size;
+    inline void set_max_cached_memory_size(int size) {
+        max_cached_memory_size_ = size;
+    }
+
+    inline void pop_until_below_threshold() {
+        for (; cur_cached_memory_size_ > max_cached_memory_size_;) {
+            auto index = slot_index_queue_.front();
+            auto &cur_key_val_info = hash_table_[index];
+            if (cur_key_val_info.insert_count_ == 1) {
+                cur_cached_memory_size_ -= cur_key_val_info.value_length_;
+                cur_key_val_info.value_str_.resize(0);
+            }
+            --cur_key_val_info.insert_count_;
+            slot_index_queue_.pop();
+        }
     }
 
     inline string *find(const string &key) {
@@ -79,24 +94,27 @@ public:
             db_stream_.seekp(0, ios::end);
             db_stream_ << value << flush;
         }
+
         auto index = hash_func(key) % max_slot_size_;
+        bool is_key_already_in = false;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
-                hash_table_[index].value_index_ = value_index;
-                hash_table_[index].value_length_ = value_length;
-                if (hash_table_[index].value_str_.size() != 0)
-                    hash_table_[index].value_str_ = move(value);
-                return;
+                is_key_already_in = true;
+                break;
             }
         }
-        hash_table_[index].key_str_ = move(key);
+
+        cur_cached_memory_size_ += value.size() - hash_table_[index].value_length_;
+        pop_until_below_threshold();
+
+        if (!is_key_already_in)
+            hash_table_[index].key_str_ = move(key);
         hash_table_[index].value_index_ = value_index;
         hash_table_[index].value_length_ = value_length;
+        hash_table_[index].value_str_ = move(value);
 
-        if (cur_cached_value_size_ < max_cached_value_size_) {
-            ++cur_cached_value_size_;
-            hash_table_[index].value_str_ = move(value);
-        }
+        slot_index_queue_.push(index);
+        ++hash_table_[index].insert_count_;
     }
 };
 
@@ -146,17 +164,17 @@ private:
         int file_size = db_stream_.tellg();
         if (!is_init_) {
             if (length_ <= 160) {
-                yche_map_.set_max_cached_value_size(250000);
+                yche_map_.set_max_cached_memory_size(25000000);
                 yche_map_.resize(60000);
             } else if (length_ <= 3000) {
-                yche_map_.set_max_cached_value_size(300000);
-                yche_map_.resize(800000);
-                threshold_ = file_size - 50000000;
+                yche_map_.set_max_cached_memory_size(10000);
+                yche_map_.resize(600000);
+                threshold_ = file_size + 1;
             }
             else {
-                yche_map_.set_max_cached_value_size(10000);
+                yche_map_.set_max_cached_memory_size(100000);
                 yche_map_.resize(60000);
-                threshold_ = file_size - 50000000;
+                threshold_ = file_size + 1;
             }
             is_init_ = true;
         }
