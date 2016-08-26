@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <string>
 #include <fstream>
+#include <iostream>
 
 #include <cstring>
 #include "sys/mman.h"
@@ -29,7 +30,7 @@ struct key_value_info {
     int value_length_{0};
 };
 
-template<size_t slot_num = 900000>
+template<size_t slot_num = 10>
 class yche_map {
 private:
     fstream db_stream_;
@@ -52,6 +53,11 @@ public:
         ftruncate(db_file_descriptor_, offset_ + MMAP_ALIGN);
         db_stream_.open(DB_NAME, ios::in | ios::binary);
         value_buffer = new char[1024 * 32];
+    }
+
+    inline void resize(int size) {
+        hash_table_.resize(size);
+        max_slot_size_ = size;
     }
 
     inline ~yche_map() {
@@ -119,7 +125,6 @@ private:
     int value_index_{0};
     int length_{0};
     int threshold_{0};
-
     bool is_init_{false};
 
     inline void read_index_info() {
@@ -148,7 +153,7 @@ private:
                     yche_map_.insert_or_replace(key_str, value_index_, length_);
             }
         }
-        value_index_ = value_index_ + length_;
+        value_index_ += length_;
         delete[]value_buf_;
         index_stream_.clear();
     }
@@ -159,13 +164,16 @@ private:
         if (!is_init_) {
             if (length_ <= 160) {
                 yche_map_.set_max_cached_value_size(250000);
+                yche_map_.resize(60000);
             } else if (length_ <= 3000) {
                 yche_map_.set_max_cached_value_size(300000);
-                threshold_ = file_size + 1;
+                yche_map_.resize(800000);
+                threshold_ = file_size - 50000000;
             }
             else {
-                yche_map_.set_max_cached_value_size(9000);
-                threshold_ = file_size + 1;
+                yche_map_.set_max_cached_value_size(10000);
+                yche_map_.resize(60000);
+                threshold_ = file_size - 50000000;
             }
             is_init_ = true;
         }
@@ -178,19 +186,16 @@ public:
 
     inline string get(string key) {
         auto str_ptr = yche_map_.find(key);
-        if (str_ptr == nullptr) {
+        if (str_ptr == nullptr)
             return "NULL";
-        }
-        else {
+        else
             return *str_ptr;
-        }
     }
 
     inline void put(string key, string value) {
         length_ = value.size();
         init_map();
         index_stream_ << key << "\n" << value_index_ << "\n" << length_ << "\n" << flush;
-
         yche_map_.insert_or_replace(key, value_index_, length_, value, true);
         value_index_ += length_;
     }
