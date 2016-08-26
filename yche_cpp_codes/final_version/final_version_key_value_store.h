@@ -25,7 +25,7 @@ struct key_value_info {
     int insert_count_{0};
 };
 
-template<size_t slot_num = 10>
+template<size_t slot_num = 100>
 class yche_map {
 private:
     fstream db_stream_;
@@ -104,17 +104,19 @@ public:
             }
         }
 
-        cur_cached_memory_size_ += value.size() - hash_table_[index].value_length_;
-        pop_until_below_threshold();
+        if (value.size() > 0) {
+            cur_cached_memory_size_ += value.size() - hash_table_[index].value_length_;
+            pop_until_below_threshold();
+            hash_table_[index].value_str_ = move(value);
+            slot_index_queue_.push(index);
+            ++hash_table_[index].insert_count_;
+        }
 
         if (!is_key_already_in)
             hash_table_[index].key_str_ = move(key);
         hash_table_[index].value_index_ = value_index;
         hash_table_[index].value_length_ = value_length;
-        hash_table_[index].value_str_ = move(value);
 
-        slot_index_queue_.push(index);
-        ++hash_table_[index].insert_count_;
     }
 };
 
@@ -164,15 +166,15 @@ private:
         int file_size = db_stream_.tellg();
         if (!is_init_) {
             if (length_ <= 160) {
-                yche_map_.set_max_cached_memory_size(25000000);
+                yche_map_.set_max_cached_memory_size(20000000);
                 yche_map_.resize(60000);
             } else if (length_ <= 3000) {
-                yche_map_.set_max_cached_memory_size(10000);
+                yche_map_.set_max_cached_memory_size(150000000);
                 yche_map_.resize(600000);
                 threshold_ = file_size + 1;
             }
             else {
-                yche_map_.set_max_cached_memory_size(100000);
+                yche_map_.set_max_cached_memory_size(50000000);
                 yche_map_.resize(60000);
                 threshold_ = file_size + 1;
             }

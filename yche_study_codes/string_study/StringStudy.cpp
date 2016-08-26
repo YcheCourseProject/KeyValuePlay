@@ -2,9 +2,17 @@
 // Created by cheyulin on 8/15/16.
 //
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
+struct key_value_info {
+    string key_str_{""};
+    string value_str_{""};
+    int value_index_{0};
+    int value_length_{0};
+    int insert_count_{0};
+};
 
 int main() {
     char *my_char = "123456";
@@ -17,6 +25,14 @@ int main() {
     cout << index << endl;
 
 
-    string yche_str = "fdsfsd";
+    vector<string> my_strs_(10);
+    my_strs_.resize(5);
 
+    for (auto str:my_strs_) {
+        cout << "my string:" << endl;
+    }
+
+    vector<key_value_info> my_vec(100000);
+    my_vec.resize(500);
+    cout << my_vec.size() << endl;
 }

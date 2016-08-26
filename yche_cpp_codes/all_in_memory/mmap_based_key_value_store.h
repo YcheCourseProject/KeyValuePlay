@@ -44,7 +44,6 @@ private:
     unordered_map<string, pair<uint32_t, uint16_t >> yche_map_;
     char *key_index_mmap_;
     char *db_value_mmap_;
-    char *db_value_buf_;
     char *serialization_buf_;
 
     int key_index_file_descriptor_;
@@ -53,13 +52,13 @@ private:
     int key_count_{0};
     uint32_t value_index_{0};
     uint16_t length_{0};
-    bool is_first_in_{true};
 
     inline void read_index_info() {
         key_index_file_descriptor_ = open(INDEX_FILE_NAME, O_RDWR | O_CREAT, 0600);
         ftruncate(key_index_file_descriptor_, SMALL_INDEX_LENGTH);
         key_index_mmap_ = (char *) mmap(0, SMALL_INDEX_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED,
                                         key_index_file_descriptor_, 0);
+        madvise(key_index_mmap_, SMALL_INDEX_LENGTH, MADV_WILLNEED | MADV_SEQUENTIAL);
         string key_str;
         for (auto i = 0; i < 90000; ++i) {
             if (key_index_mmap_[i * 77 + 76] == '\n') {
@@ -67,9 +66,6 @@ private:
                 trim_right_blank(key_str);
                 if (key_str.length() == 0)
                     continue;
-                if (is_first_in_) {
-                    is_first_in_ = false;
-                }
                 key_count_++;
                 value_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
                 length_ = deserialize<uint16_t>(key_index_mmap_ + i * 77 + 74);
@@ -83,17 +79,15 @@ private:
 
     inline void read_db_info() {
         db_file_descriptor_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
-        if (is_first_in_)
-            ftruncate(db_file_descriptor_, SMALL_DB_LENGTH);
+        ftruncate(db_file_descriptor_, SMALL_DB_LENGTH);
         db_value_mmap_ = (char *) mmap(0, SMALL_DB_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED, db_file_descriptor_, 0);
-        memcpy(db_value_buf_, db_value_mmap_, SMALL_DB_LENGTH);
+        madvise(db_value_mmap_, SMALL_DB_LENGTH, MADV_WILLNEED | MADV_RANDOM);
     }
 
 public:
     Answer() {
         yche_map_.reserve(60000);
         serialization_buf_ = new char[4];
-        db_value_buf_ = new char[SMALL_DB_LENGTH];
         read_index_info();
         read_db_info();
     }
@@ -104,7 +98,7 @@ public:
         }
         else {
             auto index_pair = yche_map_[key];
-            return string(db_value_buf_ + index_pair.first, 0, index_pair.second);
+            return string(db_value_mmap_ + index_pair.first, 0, index_pair.second);
         }
     }
 
@@ -120,7 +114,6 @@ public:
         memcpy(ptr + 74, serialization_buf_, 2);
         ptr[76] = '\n';
         memcpy(db_value_mmap_ + value_index_, value.c_str(), length_);
-        memcpy(db_value_buf_ + value_index_, value.c_str(), length_);
 
         value_index_ += length_;
         ++key_count_;
