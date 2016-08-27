@@ -35,4 +35,10 @@ int main() {
     vector<key_value_info> my_vec(100000);
     my_vec.resize(500);
     cout << my_vec.size() << endl;
+
+    string tmp_str = "";
+    string my_str = "yche";
+    string another_str = move(my_str);
+    cout << my_str.size() << endl;
+    cout << tmp_str.size() << endl;
 }

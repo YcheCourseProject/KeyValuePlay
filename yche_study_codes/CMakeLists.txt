@@ -19,3 +19,5 @@ add_executable(test_mmap_rw async_and_mmap_study/test_mmap_rw_file.cpp)
 add_executable(string_compression_zlib string_compression/zlib_study.cpp)
 target_link_libraries(string_compression_zlib z)
 
+add_executable(queue_usage queue_usage/queue_study.cpp)
+

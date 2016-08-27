@@ -10,8 +10,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "unistd.h"
-
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
 
@@ -150,15 +148,15 @@ private:
         if (!is_init_) {
             if (length_ <= 160) {
                 yche_map_.set_max_cached_value_size(250000);
-                yche_map_.resize(60000);
+                yche_map_.resize(50000);
             } else if (length_ <= 3000) {
                 yche_map_.set_max_cached_value_size(300000);
-                yche_map_.resize(600000);
+                yche_map_.resize(500000);
                 threshold_ = file_size + 1;
             }
             else {
                 yche_map_.set_max_cached_value_size(12000);
-                yche_map_.resize(60000);
+                yche_map_.resize(50000);
                 threshold_ = file_size + 1;
             }
             is_init_ = true;
