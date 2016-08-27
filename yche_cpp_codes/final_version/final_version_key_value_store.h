@@ -67,7 +67,8 @@ public:
                 cur_key_val_info.value_str_.resize(0);
             }
             --cur_key_val_info.insert_count_;
-            slot_index_queue_.pop();
+            if (!slot_index_queue_.empty())
+                slot_index_queue_.pop();
         }
     }
 

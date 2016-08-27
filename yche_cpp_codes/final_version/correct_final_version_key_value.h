@@ -10,12 +10,15 @@
 #include <fstream>
 #include <iostream>
 
+#include "unistd.h"
+
 #define INDEX_FILE_NAME "index.meta"
 #define DB_NAME "value.db"
 
 using namespace std;
 
 hash<string> hash_func;
+string empty_str_ = "";
 
 struct key_value_info {
     string key_str_{""};
@@ -73,7 +76,7 @@ public:
         return nullptr;
     }
 
-    inline void insert_or_replace(const string &key, int value_index, int value_length, const string value = "",
+    inline void insert_or_replace(string &&key, int value_index, int value_length, string &&value = move(empty_str_),
                                   bool is_write = false) {
         if (is_write) {
             db_stream_.seekp(0, ios::end);
@@ -85,17 +88,17 @@ public:
                 hash_table_[index].value_index_ = value_index;
                 hash_table_[index].value_length_ = value_length;
                 if (hash_table_[index].value_str_.size() != 0)
-                    hash_table_[index].value_str_ = move(value);
+                    hash_table_[index].value_str_ = value;
                 return;
             }
         }
-        hash_table_[index].key_str_ = move(key);
+        hash_table_[index].key_str_ = key;
         hash_table_[index].value_index_ = value_index;
         hash_table_[index].value_length_ = value_length;
 
         if (cur_cached_value_size_ < max_cached_value_size_) {
             ++cur_cached_value_size_;
-            hash_table_[index].value_str_ = move(value);
+            hash_table_[index].value_str_ = value;
         }
     }
 };
@@ -130,10 +133,10 @@ private:
                     db_stream_.seekg(value_index_, ios::beg);
                     db_stream_.read(value_buf_, length_);
                     value_str = string(value_buf_, 0, length_);
-                    yche_map_.insert_or_replace(key_str, value_index_, length_, value_str);
+                    yche_map_.insert_or_replace(move(key_str), value_index_, length_, move(value_str));
                 }
                 else
-                    yche_map_.insert_or_replace(key_str, value_index_, length_);
+                    yche_map_.insert_or_replace(move(key_str), value_index_, length_);
             }
         }
         value_index_ += length_;
@@ -154,7 +157,7 @@ private:
                 threshold_ = file_size + 1;
             }
             else {
-                yche_map_.set_max_cached_value_size(10000);
+                yche_map_.set_max_cached_value_size(12000);
                 yche_map_.resize(60000);
                 threshold_ = file_size + 1;
             }
@@ -179,7 +182,7 @@ public:
         length_ = value.size();
         init_map();
         index_stream_ << key << "\n" << value_index_ << "\n" << length_ << "\n" << flush;
-        yche_map_.insert_or_replace(key, value_index_, length_, value, true);
+        yche_map_.insert_or_replace(move(key), value_index_, length_, move(value), true);
         value_index_ += length_;
     }
 };
