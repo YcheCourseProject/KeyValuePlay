@@ -2,7 +2,7 @@
 // Created by cheyulin on 8/17/16.
 //
 
-#include "default_key_value_store.h"
+#include "fixed_aligned_key_value_store.h"
 #include <iostream>
 
 void basic_test() {
