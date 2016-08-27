@@ -62,13 +62,12 @@ public:
         for (; cur_cached_memory_size_ > max_cached_memory_size_;) {
             auto index = slot_index_queue_.front();
             auto &cur_key_val_info = hash_table_[index];
-            if (cur_key_val_info.insert_count_ == 1) {
+            --cur_key_val_info.insert_count_;
+            if (cur_key_val_info.insert_count_ == 0) {
                 cur_cached_memory_size_ -= cur_key_val_info.value_length_;
                 cur_key_val_info.value_str_.resize(0);
             }
-            --cur_key_val_info.insert_count_;
-            if (!slot_index_queue_.empty())
-                slot_index_queue_.pop();
+            slot_index_queue_.pop();
         }
     }
 
@@ -170,7 +169,7 @@ private:
                 yche_map_.set_max_cached_memory_size(20000000);
                 yche_map_.resize(60000);
             } else if (length_ <= 3000) {
-                yche_map_.set_max_cached_memory_size(150000000);
+                yche_map_.set_max_cached_memory_size(15000000);
                 yche_map_.resize(600000);
                 threshold_ = file_size + 1;
             }
