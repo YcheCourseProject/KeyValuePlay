@@ -44,6 +44,7 @@ public:
 
     inline void reserve(int size) {
         hash_table_.resize(size);
+        max_slot_size_ = size;
     }
 
     inline string *find(const string &key) {
@@ -95,7 +96,6 @@ public:
         mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
         madvise(mmap_, 6000000, MADV_DONTNEED);
     }
-
 
 
     inline string get(string key) {

@@ -29,7 +29,7 @@ Memory	| Time	| Disk Read	| Disk Write | Data | QPS/TPS | Init Time
    
    
 - Naive-Hash-Index-as-File-Name
-    - Description: put key,value pair into corresponding hash_index_as_name file
+    - Description: put key,value_ pair into corresponding hash_index_as_name file
     - [Code](multiple_file_key_value_store.h)   
     - Performance
 
@@ -113,7 +113,7 @@ git submodule update
 
 ###Strategy
 - files-organization:
-    - key-directory(use b+ tree to implement the fast search, the content of which contains value and status)
+    - key-directory(use b+ tree to implement the fast search, the content of which contains value_ and status)
     - status is used to keep the transaction correct, replace the previous one and set status true, when set false?
 - in-memory- unordered_set, trie tree, b+ tree
 - serialization, string to uint8 bytes
