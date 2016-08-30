@@ -1,8 +1,9 @@
 //
-// Created by cheyulin on 8/26/16.
+// Created by cheyulin on 8/30/16.
 //
-#ifndef KEYVALUESTORE_ANOTHER_IMPL_KEY_VALUE_H
-#define KEYVALUESTORE_ANOTHER_IMPL_KEY_VALUE_H
+
+#ifndef KEYVALUESTORE_MMAP_KEY_VALUE_H
+#define KEYVALUESTORE_MMAP_KEY_VALUE_H
 
 #include <cstring>
 #include <string>
@@ -58,7 +59,7 @@ public:
         return nullptr;
     }
 
-    inline void insert_or_replace(const string &key, string &&value) {
+    inline void insert_or_replace(string &&key, string &&value) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
@@ -85,7 +86,7 @@ private:
 
 public:
     inline Answer() {
-        map_.reserve(50000);
+        map_.reserve(60000);
         buff_ = new char[10];
         fd_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
         struct stat st;
@@ -106,7 +107,7 @@ public:
                 index_ += int_size;
                 value_.assign(mmap_ + index_, val_len_);
                 index_ += val_len_;
-                map_.insert_or_replace(key_, move(value_));
+                map_.insert_or_replace(move(key_), move(value_));
             }
         }
         munmap(mmap_, SMALL_SIZE);
@@ -134,8 +135,8 @@ public:
         index_ += int_size;
         memcpy(mmap_ + index_, value.c_str(), value.size());
         index_ += value.size();
-        map_.insert_or_replace(key, move(value));
+        map_.insert_or_replace(move(key), move(value));
     }
 };
 
-#endif //KEYVALUESTORE_ANOTHER_IMPL_KEY_VALUE_H
+#endif //KEYVALUESTORE_MMAP_KEY_VALUE_H

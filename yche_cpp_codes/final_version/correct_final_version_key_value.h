@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <string>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 
@@ -14,6 +15,18 @@
 #define DB_NAME "value.db"
 
 using namespace std;
+
+constexpr int int_size = sizeof(int);
+
+inline void serialize(char *buffer, int integer) {
+    memcpy(buffer, &integer, int_size);
+}
+
+inline int deserialize(char *buffer) {
+    int integer;
+    memcpy(&integer, buffer, int_size);
+}
+
 
 hash<string> hash_func;
 string empty_str_ = "";
@@ -25,15 +38,13 @@ struct key_value_info {
     int value_length_{0};
 };
 
-template<size_t slot_num = 10>
+template<size_t slot_num = 50>
 class yche_map {
 private:
     fstream db_stream_;
-
     vector<key_value_info> hash_table_;
     char *value_buffer;
     string result_str_;
-
     size_t cur_cached_value_size_{0};
     size_t max_cached_value_size_{1000};
     size_t max_slot_size_{slot_num};
