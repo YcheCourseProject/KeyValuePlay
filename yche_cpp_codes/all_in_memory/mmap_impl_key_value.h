@@ -73,6 +73,7 @@ public:
 
 class Answer {
 private:
+    yche_map<> map_;
     char *mmap_;
     int fd_;
     int index_{0};
@@ -81,18 +82,17 @@ private:
     int key_len_;
     int val_len_;
     char *buff_;
-    yche_map<> map_;
 
 public:
     inline Answer() {
-        map_.reserve(50000);
+        map_.reserve(48000);
         buff_ = new char[10];
         fd_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
         struct stat st;
         fstat(fd_, &st);
         if (st.st_size != SMALL_SIZE)
             ftruncate(fd_, SMALL_SIZE);
-        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_READ, MAP_PRIVATE, fd_, 0);
+        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd_, 0);
         madvise(0, SMALL_SIZE, MADV_SEQUENTIAL | MADV_WILLNEED);
         for (;;) {
             key_len_ = deserialize(mmap_ + index_);
@@ -109,8 +109,6 @@ public:
                 map_.insert_or_replace(key_, move(value_));
             }
         }
-        munmap(mmap_, SMALL_SIZE);
-        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE, MAP_SHARED, fd_, 0);
     }
 
     inline string get(string key) {
