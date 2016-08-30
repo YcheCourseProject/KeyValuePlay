@@ -99,7 +99,7 @@ public:
 
 class Answer {
 private:
-    yche_map<int> yche_map_;
+    yche_map<int> map_;
     yche_map<string> key_value_map_;
     fstream index_stream_;
     fstream db_stream_;
@@ -127,9 +127,9 @@ private:
         }
         key_value_map_.reserve(cache_max_size_ * 1.3);
         if (value_alignment_ == MEDIUM_VALUE_ALIGNMENT)
-            yche_map_.reserve(500000);
+            map_.reserve(500000);
         else
-            yche_map_.reserve(100000);
+            map_.reserve(100000);
     }
 
     inline void read_index_info() {
@@ -139,7 +139,7 @@ private:
             getline(index_stream_, key_str);
             if (index_stream_.good()) {
                 getline(index_stream_, index_str);
-                yche_map_.insert_or_replace(key_str, stoi(index_str));
+                map_.insert_or_replace(key_str, stoi(index_str));
                 db_file_index_++;
             }
         }
@@ -235,7 +235,7 @@ public:
     }
 
     inline string get(string &&key) {
-        if (yche_map_.find(key) == nullptr) {
+        if (map_.find(key) == nullptr) {
             return "NULL";
         }
         else {
@@ -243,7 +243,7 @@ public:
             if (value_ptr != nullptr) {
                 return *value_ptr;
             }
-            db_stream_.seekg(*yche_map_.find(key) * (key_alignment_ + value_alignment_) + key_alignment_,
+            db_stream_.seekg(*map_.find(key) * (key_alignment_ + value_alignment_) + key_alignment_,
                              ios::beg);
             db_stream_.read(buffer_chars_, value_alignment_);
             string result_string(buffer_chars_, 0, value_alignment_);
@@ -257,13 +257,13 @@ public:
             init_db_file(value);
             is_first_in_ = false;
         }
-        if (yche_map_.find(key) == nullptr) {
+        if (map_.find(key) == nullptr) {
             index_stream_ << key << "\n" << to_string(db_file_index_) << "\n" << flush;
-            yche_map_.insert_or_replace(key, db_file_index_);
+            map_.insert_or_replace(key, db_file_index_);
             db_file_index_++;
             db_stream_.seekp(0, ios::end);
         } else {
-            db_stream_.seekp(*yche_map_.find(key) * (key_alignment_ + value_alignment_), ios::beg);
+            db_stream_.seekp(*map_.find(key) * (key_alignment_ + value_alignment_), ios::beg);
         }
         db_stream_ << left << setw(key_alignment_) << key << left << setw(value_alignment_) << value << flush;
         if (key_value_map_.size() < cache_max_size_ || key_value_map_.find(key) != nullptr)

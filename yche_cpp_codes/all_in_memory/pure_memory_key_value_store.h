@@ -71,7 +71,7 @@ public:
 
 class Answer {
 private:
-    yche_map<90000> yche_map_;
+    yche_map<90000> map_;
     int file_descriptor_;
     char *mmap_;
     int index_{0};
@@ -85,7 +85,7 @@ public:
             getline(input_file_stream, key_str);
             if (input_file_stream.good()) {
                 getline(input_file_stream, value_str);
-                yche_map_.insert_or_replace(key_str, value_str);
+                map_.insert_or_replace(key_str, value_str);
                 index_ += key_str.size() + value_str.size() + 2;
             }
         }
@@ -93,10 +93,13 @@ public:
         if (get_file_size(file_descriptor_) != 6000000)
             ftruncate(file_descriptor_, 6000000);
         mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
+        madvise(mmap_, 6000000, MADV_DONTNEED);
     }
 
+
+
     inline string get(string key) {
-        auto result = yche_map_.find(key);
+        auto result = map_.find(key);
         if (result != nullptr) {
             return *result;
         }
@@ -114,7 +117,7 @@ public:
         index_ += value.size();
         mmap_[index_] = '\n';
         ++index_;
-        yche_map_.insert_or_replace(key, value);
+        map_.insert_or_replace(key, value);
     }
 };
 

@@ -119,7 +119,7 @@ public:
 class Answer {
 private:
     array<unique_ptr<fstream>, DB_FILE_NUM> db_file_array_;
-    yche_map yche_map_;
+    yche_map map_;
     SerializationInfo serialization_info_;
 
 public:
@@ -156,10 +156,10 @@ public:
             }
         }
 
-        yche_map_.reset_info(serialization_info_);
+        map_.reset_info(serialization_info_);
 
         input_file_stream.clear();
-        auto string_ptr = yche_map_.find(key);
+        auto string_ptr = map_.find(key);
         if (string_ptr == nullptr)
             return "NULL";
         else
@@ -194,10 +194,10 @@ public:
             }
         }
 
-        yche_map_.reset_info(serialization_info_);
+        map_.reset_info(serialization_info_);
 
         input_file_stream.clear();
-        input_file_stream << yche_map_.to_string() << flush;
+        input_file_stream << map_.to_string() << flush;
     }
 };
 

@@ -285,7 +285,7 @@ public:
 
 class Answer {
 private:
-    yche_map<> yche_map_;
+    yche_map<> map_;
     bool is_file_exists_{false};
     fstream db_file_stream_;
     fstream index_file_stream_;
@@ -312,11 +312,11 @@ private:
             open_index_file(LARGE_INDEX_FILE_NAME);
         }
         data_set_alignment_info_ptr_ = new DataSetAlignmentInfo(data_set_type);
-        yche_map_.data_set_alignment_info_ptr_ = data_set_alignment_info_ptr_;
-        yche_map_.db_file_stream_ptr_ = &db_file_stream_;
-        yche_map_.index_file_stream_ptr = &index_file_stream_;
-        yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
-        yche_map_.resize(data_set_alignment_info_ptr_->hash_in_memory_tuple_size_);
+        map_.data_set_alignment_info_ptr_ = data_set_alignment_info_ptr_;
+        map_.db_file_stream_ptr_ = &db_file_stream_;
+        map_.index_file_stream_ptr = &index_file_stream_;
+        map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
+        map_.resize(data_set_alignment_info_ptr_->hash_in_memory_tuple_size_);
     }
 
 public:
@@ -325,19 +325,19 @@ public:
         is_file_exists_ = true;
         if (db_file_stream_.good()) {
             init_yche_hash_map(DataSetType::small);
-            yche_map_.read_portion_of_file_to_hash_table();
+            map_.read_portion_of_file_to_hash_table();
         } else {
             db_file_stream_.open(MEDIUM_FILE_NAME, ios::in | ios::out);
             if (db_file_stream_.good()) {
                 init_yche_hash_map(DataSetType::medium);
-                yche_map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
-                yche_map_.read_portion_of_file_to_hash_table();
+                map_.read_buffer_ = new char[data_set_alignment_info_ptr_->whole_alignment_size_];
+                map_.read_portion_of_file_to_hash_table();
             }
             else {
                 db_file_stream_.open(LARGE_FILE_NAME, ios::in | ios::out);
                 if (db_file_stream_.good()) {
                     init_yche_hash_map(DataSetType::large);
-                    yche_map_.read_portion_of_file_to_hash_table();
+                    map_.read_portion_of_file_to_hash_table();
                 }
                 else
                     is_file_exists_ = false;
@@ -350,7 +350,7 @@ public:
     }
 
     inline string get(string &&key) { //读取KV
-        auto result = yche_map_.find(key);
+        auto result = map_.find(key);
         if (result != nullptr) {
             return *result;
         }
@@ -375,7 +375,7 @@ public:
                 create_db_file(LARGE_FILE_NAME);
             }
         }
-        yche_map_.insert_or_replace(key, value);
+        map_.insert_or_replace(key, value);
         db_file_stream_ << flush;
         index_file_stream_ << flush;
     }

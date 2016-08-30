@@ -41,7 +41,8 @@ void trim_right_blank(string &to_trim_string) {
 
 class Answer {
 private:
-    unordered_map<string, pair<uint32_t, uint16_t >> yche_map_;
+    unordered_map<string, pair<uint32_t, uint16_t >> map_;
+
     char *key_index_mmap_;
     char *db_value_mmap_;
     char *serialization_buf_;
@@ -69,7 +70,7 @@ private:
                 key_count_++;
                 value_index_ = deserialize<uint32_t>(key_index_mmap_ + i * 77 + 70);
                 length_ = deserialize<uint16_t>(key_index_mmap_ + i * 77 + 74);
-                yche_map_[key_str] = make_pair(value_index_, length_);
+                map_[key_str] = make_pair(value_index_, length_);
             } else {
                 break;
             }
@@ -81,30 +82,30 @@ private:
         db_file_descriptor_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
         ftruncate(db_file_descriptor_, SMALL_DB_LENGTH);
         db_value_mmap_ = (char *) mmap(0, SMALL_DB_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED, db_file_descriptor_, 0);
-        madvise(db_value_mmap_, SMALL_DB_LENGTH, MADV_WILLNEED | MADV_RANDOM);
+        madvise(db_value_mmap_, SMALL_DB_LENGTH, MADV_WILLNEED | MADV_SEQUENTIAL);
     }
 
 public:
     Answer() {
-        yche_map_.reserve(60000);
+        map_.reserve(60000);
         serialization_buf_ = new char[4];
         read_index_info();
         read_db_info();
     }
 
     inline string get(string key) {
-        if (yche_map_.find(key) == yche_map_.end()) {
+        if (map_.find(key) == map_.end()) {
             return "NULL";
         }
         else {
-            auto index_pair = yche_map_[key];
+            auto index_pair = map_[key];
             return string(db_value_mmap_ + index_pair.first, 0, index_pair.second);
         }
     }
 
     inline void put(string key, string value) {
         length_ = value.size();
-        yche_map_[key] = make_pair(value_index_, length_);
+        map_[key] = make_pair(value_index_, length_);
 
         char *ptr = key_index_mmap_ + key_count_ * 77;
         memcpy(ptr, key.c_str(), key.size());

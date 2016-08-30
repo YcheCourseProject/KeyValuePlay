@@ -28,14 +28,14 @@ inline size_t get_file_size(int file_descriptor) {
 
 class Answer {
 private:
-    unordered_map<string, string> yche_map_;
+    unordered_map<string, string> map_;
     int file_descriptor_;
     char *mmap_;
     int index_{0};
 
 public:
     inline Answer() {
-        yche_map_.reserve(90000);
+        map_.reserve(90000);
         fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
         string key_str;
         string value_str;
@@ -43,7 +43,7 @@ public:
             getline(input_file_stream, key_str);
             if (input_file_stream.good()) {
                 getline(input_file_stream, value_str);
-                yche_map_[key_str] = value_str;
+                map_[key_str] = value_str;
                 index_ += key_str.size() + value_str.size() + 2;
             }
         }
@@ -54,8 +54,8 @@ public:
     }
 
     inline string get(string key) {
-        auto result = yche_map_.find(key);
-        if (result != yche_map_.end()) {
+        auto result = map_.find(key);
+        if (result != map_.end()) {
             return result->second;
         }
         else {
@@ -72,7 +72,7 @@ public:
         index_ += value.size();
         mmap_[index_] = '\n';
         ++index_;
-        yche_map_[key] = value;
+        map_[move(key)] = move(value);
     }
 };
 

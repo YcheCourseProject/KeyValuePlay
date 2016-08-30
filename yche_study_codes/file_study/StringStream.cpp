@@ -21,6 +21,7 @@ inline pair<string, string> split(const string &str) {
 }
 
 int main() {
+    cout << sizeof(int) << endl;
     ifstream input_stream{FILE_NAME, ios::in};
 
     input_stream.seekg(0, ios::end);

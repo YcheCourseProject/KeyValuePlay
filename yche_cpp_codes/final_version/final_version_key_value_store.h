@@ -122,7 +122,7 @@ public:
 
 class Answer {
 private:
-    yche_map<> yche_map_;
+    yche_map<> map_;
     fstream index_stream_;
     fstream db_stream_;
     int value_index_{0};
@@ -150,10 +150,10 @@ private:
                     db_stream_.seekg(value_index_, ios::beg);
                     db_stream_.read(value_buf_, length_);
                     value_str = string(value_buf_, 0, length_);
-                    yche_map_.insert_or_replace(key_str, value_index_, length_, value_str);
+                    map_.insert_or_replace(key_str, value_index_, length_, value_str);
                 }
                 else
-                    yche_map_.insert_or_replace(key_str, value_index_, length_);
+                    map_.insert_or_replace(key_str, value_index_, length_);
             }
         }
         value_index_ += length_;
@@ -166,16 +166,16 @@ private:
         int file_size = db_stream_.tellg();
         if (!is_init_) {
             if (length_ <= 160) {
-                yche_map_.set_max_cached_memory_size(20000000);
-                yche_map_.resize(60000);
+                map_.set_max_cached_memory_size(20000000);
+                map_.resize(60000);
             } else if (length_ <= 3000) {
-                yche_map_.set_max_cached_memory_size(15000000);
-                yche_map_.resize(600000);
+                map_.set_max_cached_memory_size(15000000);
+                map_.resize(600000);
                 threshold_ = file_size + 1;
             }
             else {
-                yche_map_.set_max_cached_memory_size(50000000);
-                yche_map_.resize(60000);
+                map_.set_max_cached_memory_size(50000000);
+                map_.resize(60000);
                 threshold_ = file_size + 1;
             }
             is_init_ = true;
@@ -188,7 +188,7 @@ public:
     }
 
     inline string get(string key) {
-        auto str_ptr = yche_map_.find(key);
+        auto str_ptr = map_.find(key);
         if (str_ptr == nullptr)
             return "NULL";
         else
@@ -199,7 +199,7 @@ public:
         length_ = value.size();
         init_map();
         index_stream_ << key << "\n" << value_index_ << "\n" << length_ << "\n" << flush;
-        yche_map_.insert_or_replace(key, value_index_, length_, value, true);
+        map_.insert_or_replace(key, value_index_, length_, value, true);
         value_index_ += length_;
     }
 };
