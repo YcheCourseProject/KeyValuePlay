@@ -1,30 +1,68 @@
 //
 // Created by cheyulin on 8/26/16.
 //
-
 #ifndef KEYVALUESTORE_ANOTHER_IMPL_KEY_VALUE_H
 #define KEYVALUESTORE_ANOTHER_IMPL_KEY_VALUE_H
 
 #include <cstring>
 #include <string>
-#include <unordered_map>
+#include <vector>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include "fcntl.h"
 #include <unistd.h>
+#include "fcntl.h"
 
 #define DB_NAME "yche.db"
 using namespace std;
 constexpr int int_size = sizeof(int);
 
-void serialize(char *buffer, int integer) {
+inline void serialize(char *buffer, int integer) {
     memcpy(buffer, &integer, int_size);
 }
 
-int deserialize(char *buffer) {
+inline int deserialize(char *buffer) {
     int integer;
     memcpy(&integer, buffer, int_size);
 }
+
+hash<string> hash_func;
+
+struct key_value_info {
+    string key_str_{""};
+    string value_str{""};
+};
+
+template<size_t slot_num = 55000>
+class yche_map {
+private:
+    vector<key_value_info> hash_table_;
+    size_t max_slot_size_{slot_num};
+
+public:
+    inline yche_map() : hash_table_(slot_num) {}
+
+    inline string *find(const string &key) {
+        auto index = hash_func(key) % max_slot_size_;
+        for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
+            if (hash_table_[index].key_str_ == key) {
+                return &hash_table_[index].value_str;
+            }
+        }
+        return nullptr;
+    }
+
+    inline void insert_or_replace(const string &key, const string &value) {
+        auto index = hash_func(key) % max_slot_size_;
+        for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
+            if (hash_table_[index].key_str_ == key) {
+                hash_table_[index].value_str = value;
+                return;
+            }
+        }
+        hash_table_[index].key_str_ = key;
+        hash_table_[index].value_str = value;
+    }
+};
 
 class Answer {
 private:
@@ -36,11 +74,10 @@ private:
     string key_;
     string value_;
     char *buff_;
-    unordered_map<string, string> map_;
+    yche_map<> map_;
 
 public:
     inline Answer() {
-        map_.reserve(60000);
         buff_ = new char[10];
         fd_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
         struct stat st;
@@ -61,17 +98,18 @@ public:
                 index_ += int_size;
                 value_.assign(mmap_ + index_, val_len_);
                 index_ += val_len_;
-                map_[move(key_)] = move(value_);
+                map_.insert_or_replace(key_, value_);
             }
         }
     }
 
     inline string get(string key) {
-        auto iter = map_.find(move(key));
-        if (iter == map_.end()) {
+        auto result = map_.find(key);
+        if (result != nullptr) {
+            return *result;
+        }
+        else {
             return "NULL";
-        } else {
-            return iter->second;
         }
     }
 
@@ -86,7 +124,7 @@ public:
         index_ += int_size;
         memcpy(mmap_ + index_, value.c_str(), value.size());
         index_ += value.size();
-        map_[move(key)] = move(value);
+        map_.insert_or_replace(key_, value_);
     }
 };
 

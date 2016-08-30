@@ -23,5 +23,5 @@ int main() {
     Answer naive_store;
 
     basic_test();
-    get_test();
+//    get_test();
 }
