@@ -32,7 +32,7 @@ struct key_value_info {
     string value_str{""};
 };
 
-template<size_t slot_num = 55000>
+template<size_t slot_num = 50000>
 class yche_map {
 private:
     vector<key_value_info> hash_table_;
@@ -71,8 +71,7 @@ private:
     int index_{0};
     int key_len_;
     int val_len_;
-    string key_;
-    string value_;
+
     char *buff_;
     yche_map<> map_;
 
@@ -86,19 +85,21 @@ public:
             ftruncate(fd_, 6000000);
         mmap_ = (char *) mmap(NULL, 6000000, PROT_WRITE | PROT_READ, MAP_SHARED, fd_, 0);
         madvise(0, 6000000, MADV_SEQUENTIAL | MADV_WILLNEED);
+        string key;
+        string value;
         for (;;) {
             key_len_ = deserialize(mmap_ + index_);
             if (key_len_ == 0)
                 break;
             index_ += sizeof(int);
             if (key_len_ != 0) {
-                key_.assign(mmap_ + index_, key_len_);
+                key.assign(mmap_ + index_, key_len_);
                 index_ += key_len_;
                 val_len_ = deserialize(mmap_ + index_);
                 index_ += int_size;
-                value_.assign(mmap_ + index_, val_len_);
+                value.assign(mmap_ + index_, val_len_);
                 index_ += val_len_;
-                map_.insert_or_replace(key_, value_);
+                map_.insert_or_replace(key, value);
             }
         }
     }
@@ -124,7 +125,7 @@ public:
         index_ += int_size;
         memcpy(mmap_ + index_, value.c_str(), value.size());
         index_ += value.size();
-        map_.insert_or_replace(key_, value_);
+        map_.insert_or_replace(key, value);
     }
 };
 
