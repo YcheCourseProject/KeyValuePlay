@@ -17,15 +17,15 @@
 #define SMALL_SIZE 6000000
 
 using namespace std;
-constexpr int int_size = sizeof(int);
+constexpr int INT_SIZE = sizeof(int);
 
 inline void serialize(char *buffer, int integer) {
-    memcpy(buffer, &integer, int_size);
+    memcpy(buffer, &integer, INT_SIZE);
 }
 
 inline int deserialize(char *buffer) {
     int integer;
-    memcpy(&integer, buffer, int_size);
+    memcpy(&integer, buffer, INT_SIZE);
 }
 
 hash<string> hash_func;
@@ -104,7 +104,7 @@ public:
                 key_.assign(mmap_ + index_, key_len_);
                 index_ += key_len_;
                 val_len_ = deserialize(mmap_ + index_);
-                index_ += int_size;
+                index_ += INT_SIZE;
                 value_.assign(mmap_ + index_, val_len_);
                 index_ += val_len_;
                 map_.insert_or_replace(move(key_), move(value_));
@@ -126,13 +126,13 @@ public:
 
     inline void put(string key, string value) {
         serialize(buff_, key.size());
-        memcpy(mmap_ + index_, buff_, int_size);
-        index_ += int_size;
+        memcpy(mmap_ + index_, buff_, INT_SIZE);
+        index_ += INT_SIZE;
         memcpy(mmap_ + index_, key.c_str(), key.size());
         index_ += key.size();
         serialize(buff_, value.size());
-        memcpy(mmap_ + index_, buff_, int_size);
-        index_ += int_size;
+        memcpy(mmap_ + index_, buff_, INT_SIZE);
+        index_ += INT_SIZE;
         memcpy(mmap_ + index_, value.c_str(), value.size());
         index_ += value.size();
         map_.insert_or_replace(move(key), move(value));

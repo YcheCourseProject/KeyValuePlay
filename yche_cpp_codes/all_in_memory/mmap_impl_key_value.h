@@ -16,7 +16,7 @@
 #define SMALL_SIZE 6000000
 
 using namespace std;
-constexpr int int_size = sizeof(int);
+constexpr int INT_SIZE = sizeof(int);
 int integer;
 string key_;
 string value_;
@@ -24,7 +24,7 @@ int key_len_;
 int val_len_;
 
 void deserialize(char *buffer) {
-    memcpy(&integer, buffer, int_size);
+    memcpy(&integer, buffer, INT_SIZE);
 }
 
 hash<string> hash_func;
@@ -83,20 +83,20 @@ public:
         fstat(fd_, &st);
         if (st.st_size != SMALL_SIZE)
             ftruncate(fd_, SMALL_SIZE);
-        mmap_ = (char *) mmap(NULL, SMALL_SIZE*10, PROT_WRITE | PROT_READ, MAP_SHARED, fd_, 0);
+        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd_, 0);
         madvise(0, SMALL_SIZE, MADV_SEQUENTIAL | MADV_WILLNEED);
         for (;;) {
             deserialize(mmap_ + index_);
             key_len_ = integer;
             if (key_len_ == 0)
                 break;
-            index_ += int_size;
+            index_ += INT_SIZE;
             if (key_len_ != 0) {
                 key_.assign(mmap_ + index_, key_len_);
                 index_ += key_len_;
                 deserialize(mmap_ + index_);
                 val_len_ = integer;
-                index_ += int_size;
+                index_ += INT_SIZE;
                 value_.assign(mmap_ + index_, val_len_);
                 index_ += val_len_;
                 map_.insert_or_replace(key_, value_);
@@ -116,13 +116,13 @@ public:
 
     void put(string key, string value) {
         key_len_ = key.size();
-        memcpy(mmap_ + index_, &key_len_, int_size);
-        index_ += int_size;
+        memcpy(mmap_ + index_, &key_len_, INT_SIZE);
+        index_ += INT_SIZE;
         memcpy(mmap_ + index_, key.c_str(), key_len_);
         index_ += key_len_;
         val_len_ = value.size();
-        memcpy(mmap_ + index_, &val_len_, int_size);
-        index_ += int_size;
+        memcpy(mmap_ + index_, &val_len_, INT_SIZE);
+        index_ += INT_SIZE;
         memcpy(mmap_ + index_, value.c_str(), val_len_);
         index_ += val_len_;
         map_.insert_or_replace(key, value);

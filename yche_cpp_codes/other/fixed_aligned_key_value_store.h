@@ -12,7 +12,7 @@
 #include <iomanip>
 #include <algorithm>
 
-#define INDEX_FILE_NAME "index.meta"
+#define INDEX_NAME "index.meta"
 #define SMALL_DB_NAME "small.db"
 #define MEDIUM_DB_NAME "medium.db"
 #define LARGE_DB_NAME "large.db"
@@ -147,7 +147,7 @@ private:
     }
 
     inline void read_db_info() {
-        index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
+        index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(SMALL_DB_NAME, ios::in | ios::out | ios::binary);
         if (db_stream_.good() == true) {
             key_alignment_ = SMALL_KEY_ALIGNMENT;

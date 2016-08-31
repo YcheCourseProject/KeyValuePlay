@@ -10,7 +10,7 @@
 #include <queue>
 #include <fstream>
 
-#define INDEX_FILE_NAME "index.meta"
+#define INDEX_NAME "index.meta"
 #define DB_NAME "value.db"
 
 using namespace std;
@@ -125,14 +125,14 @@ private:
     yche_map<> map_;
     fstream index_stream_;
     fstream db_stream_;
-    int value_index_{0};
-    int length_{0};
+    int val_index_{0};
+    int val_len_{0};
     int threshold_{0};
     bool is_init_{false};
 
     inline void read_index_info() {
         char *value_buf_ = new char[32 * 1024];
-        index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
+        index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::in | ios::binary);
         string key_str;
         string prefix_sum_index_str;
@@ -143,20 +143,20 @@ private:
             if (index_stream_.good()) {
                 getline(index_stream_, prefix_sum_index_str);
                 getline(index_stream_, length_str);
-                value_index_ = stoi(prefix_sum_index_str);
-                length_ = stoi(length_str);
+                val_index_ = stoi(prefix_sum_index_str);
+                val_len_ = stoi(length_str);
                 init_map();
-                if (value_index_ >= threshold_) {
-                    db_stream_.seekg(value_index_, ios::beg);
-                    db_stream_.read(value_buf_, length_);
-                    value_str = string(value_buf_, 0, length_);
-                    map_.insert_or_replace(key_str, value_index_, length_, value_str);
+                if (val_index_ >= threshold_) {
+                    db_stream_.seekg(val_index_, ios::beg);
+                    db_stream_.read(value_buf_, val_len_);
+                    value_str = string(value_buf_, 0, val_len_);
+                    map_.insert_or_replace(key_str, val_index_, val_len_, value_str);
                 }
                 else
-                    map_.insert_or_replace(key_str, value_index_, length_);
+                    map_.insert_or_replace(key_str, val_index_, val_len_);
             }
         }
-        value_index_ += length_;
+        val_index_ += val_len_;
         delete[]value_buf_;
         index_stream_.clear();
     }
@@ -165,10 +165,10 @@ private:
         db_stream_.seekg(0, ios::end);
         int file_size = db_stream_.tellg();
         if (!is_init_) {
-            if (length_ <= 160) {
+            if (val_len_ <= 160) {
                 map_.set_max_cached_memory_size(20000000);
                 map_.resize(60000);
-            } else if (length_ <= 3000) {
+            } else if (val_len_ <= 3000) {
                 map_.set_max_cached_memory_size(15000000);
                 map_.resize(600000);
                 threshold_ = file_size + 1;
@@ -196,11 +196,11 @@ public:
     }
 
     inline void put(string key, string value) {
-        length_ = value.size();
+        val_len_ = value.size();
         init_map();
-        index_stream_ << key << "\n" << value_index_ << "\n" << length_ << "\n" << flush;
-        map_.insert_or_replace(key, value_index_, length_, value, true);
-        value_index_ += length_;
+        index_stream_ << key << "\n" << val_index_ << "\n" << val_len_ << "\n" << flush;
+        map_.insert_or_replace(key, val_index_, val_len_, value, true);
+        val_index_ += val_len_;
     }
 };
 

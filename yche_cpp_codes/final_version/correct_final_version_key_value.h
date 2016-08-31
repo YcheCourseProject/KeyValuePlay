@@ -9,28 +9,24 @@
 #include <string>
 #include <cstring>
 #include <fstream>
+#include <sys/stat.h>
 #include <iostream>
+#include "unistd.h"
+#include "fcntl.h"
 
-#define INDEX_FILE_NAME "index.meta"
-#define DB_NAME "value.db"
+#define DB_NAME "yche.db"
+#define SMALL 6000000
+#define MEDIUM 1500000000
+#define LARGE 3000000000
 
 using namespace std;
-
-constexpr int int_size = sizeof(int);
-
-inline void serialize(char *buffer, int integer) {
-    memcpy(buffer, &integer, int_size);
-}
-
-inline int deserialize(char *buffer) {
-    int integer;
-    memcpy(&integer, buffer, int_size);
-}
+fstream file_stream_;
+constexpr int INT_SIZE = sizeof(int);
+char *buffer;
 
 hash<string> hash_func;
-string empty_str_;
 
-struct key_value_info {
+struct [[pack]] key_value_info {
     string key_str_;
     string value_str_;
     int value_index_{0};
@@ -39,61 +35,33 @@ struct key_value_info {
 
 class yche_map {
 private:
-    fstream db_stream_;
     vector<key_value_info> hash_table_;
-    char *value_buffer;
+    int max_slot_size_{0};
     string result_str_;
-    size_t cur_cached_value_size_{0};
-    size_t max_cached_value_size_{1000};
-    size_t max_slot_size_{0};
 
 public:
-    inline yche_map() : hash_table_(0) {
-        db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
-        value_buffer = new char[1024 * 32];
-    }
-
-    inline void resize(int size) {
-        hash_table_.resize(size);
+    void resize(int size) {
         max_slot_size_ = size;
+        hash_table_.resize(size);
     }
 
-    inline ~yche_map() {
-        delete[]value_buffer;
-    }
-
-    inline void set_max_cached_value_size(int size) {
-        max_cached_value_size_ = size;
-    }
-
-    inline string *find(const string &key) {
+    string *find(const string &key) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
-                [[likely(true)]]
-                if (hash_table_[index].value_str_.size() > 0)
-                    return &hash_table_[index].value_str_;
-                else {
-                    db_stream_.seekg(hash_table_[index].value_index_, ios::beg);
-                    db_stream_.read(value_buffer, hash_table_[index].value_length_);
-                    result_str_ = move(string(value_buffer, 0, hash_table_[index].value_length_));
-                    return &result_str_;
-                }
+                file_stream_.seekg(hash_table_[index].value_index_);
+                file_stream_.read(buffer, hash_table_[index].value_length_);
+                result_str_ = string(buffer, 0, hash_table_[index].value_length_);
+                return &result_str_;
             }
         }
         return nullptr;
     }
 
-    inline void insert_or_replace(string &key, int value_index, int value_length, string &value = empty_str_,
-                                  bool is_write = false) {
-        if (is_write) {
-            db_stream_.seekp(0, ios::end);
-            db_stream_ << value << flush;
-        }
+    void insert_or_replace(const string &key, int value_index, int value_length) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
-                hash_table_[index].value_str_ = move(value);
                 hash_table_[index].value_index_ = value_index;
                 hash_table_[index].value_length_ = value_length;
                 return;
@@ -102,94 +70,117 @@ public:
         hash_table_[index].key_str_ = move(key);
         hash_table_[index].value_index_ = value_index;
         hash_table_[index].value_length_ = value_length;
-        if (cur_cached_value_size_ < max_cached_value_size_) {
-            ++cur_cached_value_size_;
-            hash_table_[index].value_str_ = move(value);
-        }
     }
 };
 
 class Answer {
 private:
     yche_map map_;
-    fstream index_stream_;
-    fstream db_stream_;
-    int value_index_{0};
-    int length_{0};
-    int threshold_{0};
+    string key_;
+    string value_;
+    int file_index_{0};
+    int key_len_;
+    int val_index_{0};
+    int val_len_{0};
     bool is_init_{false};
+    bool is_file_created{false};
+    int integer_;
 
-    inline void read_index_info() {
-        char *value_buf_ = new char[32 * 1024];
-        index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
-        db_stream_.open(DB_NAME, ios::in | ios::binary);
-        string key_str;
-        string prefix_sum_index_str;
-        string length_str;
-        string value_str;
-        for (; index_stream_.good();) {
-            getline(index_stream_, key_str);
-            if (index_stream_.good()) {
-                getline(index_stream_, prefix_sum_index_str);
-                getline(index_stream_, length_str);
-                value_index_ = stoi(prefix_sum_index_str);
-                length_ = stoi(length_str);
-                init_map();
-                if (value_index_ >= threshold_) {
-                    db_stream_.seekg(value_index_, ios::beg);
-                    db_stream_.read(value_buf_, length_);
-                    value_str = string(value_buf_, 0, length_);
-                    map_.insert_or_replace(key_str, value_index_, length_, value_str);
-                }
-                else
-                    map_.insert_or_replace(key_str, value_index_, length_);
-            }
-        }
-        value_index_ += length_;
-        delete[]value_buf_;
-        index_stream_.clear();
+    void deserialize() {
+        memcpy(&integer_, buffer, INT_SIZE);
     }
 
-    inline void init_map() {
-        db_stream_.seekg(0, ios::end);
-        int file_size = db_stream_.tellg();
+    void init_map() {
         if (!is_init_) {
-            if (length_ <= 160) {
-                map_.set_max_cached_value_size(250000);
+            if (val_len_ <= 160) {
                 map_.resize(50000);
-            } else if (length_ <= 3000) {
-                map_.set_max_cached_value_size(300000);
+            } else if (val_len_ <= 3000) {
                 map_.resize(500000);
-                threshold_ = file_size + 1;
             }
             else {
-                map_.set_max_cached_value_size(6000);
                 map_.resize(50000);
-                threshold_ = file_size + 1;
             }
             is_init_ = true;
         }
     }
 
+    void init_file(int size) {
+        int fd = open(DB_NAME, O_RDWR | O_CREAT, 0600);
+        if (size <= 160) {
+            cout << "truncate" << endl;
+            ftruncate(fd, SMALL);
+        } else if (size <= 30000) {
+            ftruncate(fd, MEDIUM);
+        } else {
+            ftruncate(fd, LARGE);
+        }
+        is_file_created = true;
+        file_stream_.open(DB_NAME, ios::in | ios::out);
+        file_stream_.clear();
+        file_stream_.seekp(0, ios::beg);
+    }
+
 public:
-    inline Answer() {
-        read_index_info();
+    Answer() {
+        buffer = new char[32 * 1024];
+        file_stream_.open(DB_NAME, ios::in | ios::out);
+        if (file_stream_.good()) {
+            is_file_created = true;
+            for (;;) {
+                file_stream_.read(buffer, INT_SIZE);
+                deserialize();
+                key_len_ = integer_;
+                if (key_len_ == 0)
+                    break;
+                file_index_ += INT_SIZE;
+                if (key_len_ != 0) {
+                    file_stream_.read(buffer, key_len_);
+                    key_.assign(buffer, key_len_);
+                    file_index_ += key_len_;
+                    file_stream_.read(buffer, INT_SIZE);
+                    deserialize();
+                    val_len_ = integer_;
+                    file_index_ += INT_SIZE;
+                    value_.assign(buffer, val_len_);
+                    map_.insert_or_replace(key_, file_index_, val_len_);
+                    file_index_ += val_len_;
+                }
+            }
+            file_stream_.seekp(file_index_, ios::beg);
+        }
     }
 
-    inline string get(string key) {
+    string get(string key) {
         auto str_ptr = map_.find(key);
-        if (str_ptr == nullptr)
+        if (str_ptr == nullptr) {
             return "NULL";
-        else
+        }
+        else {
             return *str_ptr;
+        }
     }
 
-    inline void put(string key, string value) {
-        length_ = value.size();
+    void put(string key, string value) {
         init_map();
-        index_stream_ << key << "\n" << value_index_ << "\n" << length_ << "\n" << flush;
-        map_.insert_or_replace(key, value_index_, length_, value, true);
-        value_index_ += length_;
+        [[unlikely(true)]]
+        if (!is_file_created)
+            init_file(value.size());
+        key_len_ = key.size();
+        memcpy(buffer, &key_len_, INT_SIZE);
+        if (file_stream_.good()) {
+            cout << "ok" << endl;
+        } else {
+            cout << "bad" << endl;
+        }
+        file_stream_.write(buffer, INT_SIZE);
+        file_stream_.write(key.c_str(), key.size());
+        val_len_ = value.size();
+        memcpy(buffer, &val_len_, INT_SIZE);
+        file_stream_.write(buffer, INT_SIZE);
+        file_stream_.write(value.c_str(), val_len_);
+        file_stream_.flush();
+        map_.insert_or_replace(key, file_index_ + key_len_ + INT_SIZE + INT_SIZE, val_len_);
+        file_index_ += key_len_ + val_len_ + INT_SIZE + INT_SIZE;
     }
 };
 

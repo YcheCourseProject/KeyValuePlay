@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <iostream>
 
-#define INDEX_FILE_NAME "index.meta"
+#define INDEX_NAME "index.meta"
 #define DB_NAME "value.db"
 
 using namespace std;
@@ -71,8 +71,8 @@ private:
     int db_file_descriptor_;
     char *db_mmap_;
     char *db_read_mmap_;
-    int value_index_{0};
-    int length_{0};
+    int val_index_{0};
+    int val_len_{0};
     char *value_buffer;
 
     bool is_initialized_{false};
@@ -86,19 +86,19 @@ private:
             if (index_stream_.good()) {
                 getline(index_stream_, prefix_sum_index_str);
                 getline(index_stream_, length_str);
-                value_index_ = stoi(prefix_sum_index_str);
-                length_ = stoi(length_str);
-                map_.insert_or_replace(key_str, make_pair(value_index_, length_));
+                val_index_ = stoi(prefix_sum_index_str);
+                val_len_ = stoi(length_str);
+                map_.insert_or_replace(key_str, make_pair(val_index_, val_len_));
             }
         }
-        value_index_ = value_index_ + length_;
+        val_index_ = val_index_ + val_len_;
         index_stream_.clear();
     }
 
 public:
     Answer() {
         value_buffer = new char[1024 * 32];
-        index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
+        index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_file_descriptor_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
         db_stream_.open(DB_NAME, ios::in | ios::binary);
         read_index_info();
@@ -121,14 +121,14 @@ public:
     }
 
     inline void put(string key, string value) {
-        length_ = value.size();
+        val_len_ = value.size();
         if (!is_initialized_) {
             unsigned long file_size = get_file_size(db_file_descriptor_);
             if (file_size < 10) {
-                if (length_ < 500) {
+                if (val_len_ < 500) {
                     ftruncate(db_file_descriptor_, 10000000);
                     file_size = 10000000;
-                } else if (length_ < 5000) {
+                } else if (val_len_ < 5000) {
                     ftruncate(db_file_descriptor_, 1600000000);
                     file_size = 1600000000;
                 } else {
@@ -141,13 +141,13 @@ public:
             is_initialized_ = true;
         }
         index_stream_ << key << "\n";
-        index_stream_ << value_index_ << "\n";
-        index_stream_ << length_ << "\n" << flush;
+        index_stream_ << val_index_ << "\n";
+        index_stream_ << val_len_ << "\n" << flush;
 
-        memcpy(db_mmap_ + value_index_, value.c_str(), length_);
+        memcpy(db_mmap_ + val_index_, value.c_str(), val_len_);
 
-        map_.insert_or_replace(key, make_pair(value_index_, length_));
-        value_index_ += length_;
+        map_.insert_or_replace(key, make_pair(val_index_, val_len_));
+        val_index_ += val_len_;
     }
 };
 

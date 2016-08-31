@@ -12,7 +12,7 @@
 #include <fstream>
 #include <cstring>
 
-#define INDEX_FILE_NAME "index.meta"
+#define INDEX_NAME "index.meta"
 #define DB_NAME "value.db"
 
 #define MEDIUM_BUFFER_SIZE 150000000
@@ -80,8 +80,8 @@ private:
     fstream db_stream_;
     circular_buff *circular_buff_ptr_;
 
-    int value_index_{0};
-    int length_{0};
+    int val_index_{0};
+    int val_len_{0};
 
     char *value_buffer;
     bool is_first_in_{true};
@@ -95,17 +95,17 @@ private:
             if (index_stream_.good()) {
                 getline(index_stream_, prefix_sum_index_str);
                 getline(index_stream_, length_str);
-                value_index_ = stoi(prefix_sum_index_str);
-                length_ = stoi(length_str);
+                val_index_ = stoi(prefix_sum_index_str);
+                val_len_ = stoi(length_str);
                 if (is_first_in_) {
-                    init_map_info(length_);
-                    init_circular_buffer(length_);
+                    init_map_info(val_len_);
+                    init_circular_buffer(val_len_);
                     is_first_in_ = false;
                 }
-                map_[key_str] = make_pair(value_index_, length_);
+                map_[key_str] = make_pair(val_index_, val_len_);
             }
         }
-        value_index_ = value_index_ + length_;
+        val_index_ = val_index_ + val_len_;
         index_stream_.clear();
     }
 
@@ -121,18 +121,18 @@ private:
 
     inline void init_circular_buffer(int length) {
         if (length < 500) {
-            circular_buff_ptr_ = new circular_buff(SMALL_BUFFER_SIZE, 160, value_index_);
+            circular_buff_ptr_ = new circular_buff(SMALL_BUFFER_SIZE, 160, val_index_);
         } else if (length < 5000) {
-            circular_buff_ptr_ = new circular_buff(MEDIUM_BUFFER_SIZE, 3000, value_index_);
+            circular_buff_ptr_ = new circular_buff(MEDIUM_BUFFER_SIZE, 3000, val_index_);
         } else {
-            circular_buff_ptr_ = new circular_buff(BIG_BUFFER_SIZE, 30000, value_index_);
+            circular_buff_ptr_ = new circular_buff(BIG_BUFFER_SIZE, 30000, val_index_);
         }
     }
 
 public:
     Answer() {
         value_buffer = new char[1024 * 32];
-        index_stream_.open(INDEX_FILE_NAME, ios::in | ios::out | ios::app | ios::binary);
+        index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
         read_index_info();
     }
@@ -163,22 +163,22 @@ public:
     }
 
     inline void put(string key, string value) {
-        length_ = value.size();
+        val_len_ = value.size();
         if (is_first_in_) {
-            init_map_info(length_);
-            init_circular_buffer(length_);
+            init_map_info(val_len_);
+            init_circular_buffer(val_len_);
             is_first_in_ = false;
         }
         index_stream_ << key << "\n";
-        index_stream_ << value_index_ << "\n";
-        index_stream_ << length_ << "\n" << flush;
+        index_stream_ << val_index_ << "\n";
+        index_stream_ << val_len_ << "\n" << flush;
 
         db_stream_.seekp(0, ios::end);
         db_stream_ << value << flush;
 
-        circular_buff_ptr_->push_back(value.c_str(), length_);
-        map_[key] = make_pair(value_index_, length_);
-        value_index_ += length_;
+        circular_buff_ptr_->push_back(value.c_str(), val_len_);
+        map_[key] = make_pair(val_index_, val_len_);
+        val_index_ += val_len_;
 
     }
 };

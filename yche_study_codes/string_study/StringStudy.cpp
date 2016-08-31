@@ -3,6 +3,7 @@
 //
 #include <iostream>
 #include <vector>
+#include <cstring>
 
 using namespace std;
 
@@ -42,5 +43,6 @@ int main() {
     cout << my_str.size() << endl;
     cout << tmp_str.size() << endl;
 
-    cout << sizeof(string)<<endl;
+    cout << sizeof(string) << endl;
+
 }
