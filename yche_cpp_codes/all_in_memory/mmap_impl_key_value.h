@@ -30,18 +30,17 @@ inline int deserialize(char *buffer) {
 hash<string> hash_func;
 
 struct key_value_info {
-    string key_str_{""};
-    string value_str{""};
+    string key_str_;
+    string value_str;
 };
 
-template<size_t slot_num = 10>
 class yche_map {
 private:
     vector<key_value_info> hash_table_;
-    size_t max_slot_size_{slot_num};
+    size_t max_slot_size_{0};
 
 public:
-    inline yche_map() : hash_table_(slot_num) {}
+    inline yche_map() {}
 
     inline void reserve(int size) {
         hash_table_.resize(size);
@@ -58,22 +57,22 @@ public:
         return nullptr;
     }
 
-    inline void insert_or_replace(const string &key, string &&value) {
+    inline void insert_or_replace(string &key, string &value) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
-                hash_table_[index].value_str = value;
+                hash_table_[index].value_str = move(value);
                 return;
             }
         }
-        hash_table_[index].key_str_ = key;
-        hash_table_[index].value_str = value;
+        hash_table_[index].key_str_ = move(key);
+        hash_table_[index].value_str = move(value);
     }
 };
 
 class Answer {
 private:
-    yche_map<> map_;
+    yche_map map_;
     char *mmap_;
     int fd_;
     int index_{0};
@@ -98,7 +97,7 @@ public:
             key_len_ = deserialize(mmap_ + index_);
             if (key_len_ == 0)
                 break;
-            index_ += sizeof(int);
+            index_ += int_size;
             if (key_len_ != 0) {
                 key_.assign(mmap_ + index_, key_len_);
                 index_ += key_len_;
@@ -106,7 +105,7 @@ public:
                 index_ += int_size;
                 value_.assign(mmap_ + index_, val_len_);
                 index_ += val_len_;
-                map_.insert_or_replace(key_, move(value_));
+                map_.insert_or_replace(key_, value_);
             }
         }
     }
@@ -132,7 +131,7 @@ public:
         index_ += int_size;
         memcpy(mmap_ + index_, value.c_str(), value.size());
         index_ += value.size();
-        map_.insert_or_replace(key, move(value));
+        map_.insert_or_replace(key, value);
     }
 };
 
