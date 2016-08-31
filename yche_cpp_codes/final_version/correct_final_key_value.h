@@ -13,7 +13,7 @@
 #define DB_NAME "value.db"
 
 using namespace std;
-
+string empty_str;
 hash<string> hash_func;
 
 struct key_value_info {
@@ -31,7 +31,7 @@ private:
     string result_str_;
 
     int cur_cached_value_size_{0};
-    int max_cached_value_size_{1000};
+    int max_cached_value_size_{0};
     int max_slot_size_{0};
 
 public:
@@ -70,7 +70,7 @@ public:
         return nullptr;
     }
 
-    void insert_or_replace(const string &key, int value_index, int value_length, const string value = "") {
+    void insert_or_replace(string &key, int value_index, int value_length, string &value = empty_str) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
@@ -100,7 +100,6 @@ private:
     int value_index_{0};
     int length_{0};
     int threshold_{0};
-
     bool is_init_{false};
 
     void init_map() {
@@ -111,8 +110,8 @@ private:
             yche_map_.set_max_cached_value_size(250000);
         } else if (length_ <= 3000) {
             yche_map_.resize(500000);
-            yche_map_.set_max_cached_value_size(500000);
-            threshold_ = file_size -10000000;
+            yche_map_.set_max_cached_value_size(800000);
+            threshold_ = file_size + 1;
         }
         else {
             yche_map_.resize(50000);
