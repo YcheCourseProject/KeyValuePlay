@@ -18,14 +18,14 @@
 using namespace std;
 constexpr int int_size = sizeof(int);
 
-inline void serialize(char *buffer, int integer) {
+void serialize(char *buffer, int integer) {
     memcpy(buffer, &integer, int_size);
 }
 
-inline int deserialize(char *buffer) {
+int deserialize(char *buffer) {
     int integer;
     memcpy(&integer, buffer, int_size);
-    return  integer;
+    return integer;
 }
 
 hash<string> hash_func;
@@ -41,14 +41,12 @@ private:
     size_t max_slot_size_{0};
 
 public:
-    inline yche_map() {}
-
-    inline void reserve(int size) {
+    void reserve(int size) {
         hash_table_.resize(size);
         max_slot_size_ = size;
     }
 
-    inline string *find(const string &key) {
+    string *find(const string &key) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
@@ -58,7 +56,8 @@ public:
         return nullptr;
     }
 
-    inline void insert_or_replace(string &key, string &value) {
+
+    void insert_or_replace(string &key, string &value) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
@@ -84,7 +83,7 @@ private:
     char *buff_;
 
 public:
-    inline Answer() {
+    Answer() {
         map_.reserve(48000);
         buff_ = new char[10];
         fd_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
@@ -111,7 +110,7 @@ public:
         }
     }
 
-    inline string get(string key) {
+    string get(string key) {
         auto result = map_.find(key);
         if (result != nullptr) {
             return *result;
@@ -121,7 +120,7 @@ public:
         }
     }
 
-    inline void put(string key, string value) {
+    void put(string key, string value) {
         serialize(buff_, key.size());
         memcpy(mmap_ + index_, buff_, int_size);
         index_ += int_size;

@@ -41,4 +41,6 @@ int main() {
     string another_str = move(my_str);
     cout << my_str.size() << endl;
     cout << tmp_str.size() << endl;
+
+    cout << sizeof(string)<<endl;
 }

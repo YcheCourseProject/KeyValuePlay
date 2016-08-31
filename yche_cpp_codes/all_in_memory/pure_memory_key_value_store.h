@@ -72,7 +72,7 @@ public:
 
 class Answer {
 private:
-    yche_map<90000> map_;
+    yche_map<48000> map_;
     int file_descriptor_;
     char *mmap_;
     int index_{0};
@@ -94,7 +94,6 @@ public:
         if (get_file_size(file_descriptor_) != 6000000)
             ftruncate(file_descriptor_, 6000000);
         mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
-        madvise(mmap_, 6000000, MADV_DONTNEED);
     }
 
 
