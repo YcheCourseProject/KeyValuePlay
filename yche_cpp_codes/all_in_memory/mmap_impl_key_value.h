@@ -25,6 +25,7 @@ inline void serialize(char *buffer, int integer) {
 inline int deserialize(char *buffer) {
     int integer;
     memcpy(&integer, buffer, int_size);
+    return  integer;
 }
 
 hash<string> hash_func;
