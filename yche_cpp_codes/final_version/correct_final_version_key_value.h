@@ -5,14 +5,15 @@
 #ifndef KEYVALUESTORE_CORRECT_FINAL_VERSION_KEY_VALUE_H
 #define KEYVALUESTORE_CORRECT_FINAL_VERSION_KEY_VALUE_H
 
-#include <algorithm>
 #include <string>
+#include <vector>
 #include <cstring>
 #include <fstream>
-#include <sys/stat.h>
 #include <iostream>
-#include "unistd.h"
-#include "fcntl.h"
+
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define DB_NAME "yche.db"
 #define SMALL 6000000
@@ -126,6 +127,7 @@ public:
         file_stream_.open(DB_NAME, ios::in | ios::out);
         if (file_stream_.good()) {
             is_file_created = true;
+            file_stream_.seekg(0, ios::beg);
             for (;;) {
                 file_stream_.read(buffer, INT_SIZE);
                 deserialize();
@@ -140,7 +142,9 @@ public:
                     file_stream_.read(buffer, INT_SIZE);
                     deserialize();
                     val_len_ = integer_;
+                    init_map();
                     file_index_ += INT_SIZE;
+                    file_stream_.read(buffer, val_len_);
                     value_.assign(buffer, val_len_);
                     map_.insert_or_replace(key_, file_index_, val_len_);
                     file_index_ += val_len_;
@@ -148,6 +152,11 @@ public:
             }
             file_stream_.seekp(file_index_, ios::beg);
         }
+    }
+
+    virtual ~Answer() {
+        delete[]buffer;
+//        file_stream_.close();
     }
 
     string get(string key) {
@@ -167,11 +176,6 @@ public:
             init_file(value.size());
         key_len_ = key.size();
         memcpy(buffer, &key_len_, INT_SIZE);
-        if (file_stream_.good()) {
-            cout << "ok" << endl;
-        } else {
-            cout << "bad" << endl;
-        }
         file_stream_.write(buffer, INT_SIZE);
         file_stream_.write(key.c_str(), key.size());
         val_len_ = value.size();
