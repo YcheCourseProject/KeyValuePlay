@@ -17,15 +17,14 @@
 
 using namespace std;
 constexpr int int_size = sizeof(int);
+int integer;
 
-void serialize(char *buffer, int integer) {
-    memcpy(buffer, &integer, int_size);
+void serialize(char *buffer, int my_integer) {
+    memcpy(buffer, &my_integer, int_size);
 }
 
-int deserialize(char *buffer) {
-    int integer;
+void deserialize(char *buffer) {
     memcpy(&integer, buffer, int_size);
-    return integer;
 }
 
 hash<string> hash_func;
@@ -55,7 +54,6 @@ public:
         }
         return nullptr;
     }
-
 
     void insert_or_replace(string &key, string &value) {
         auto index = hash_func(key) % max_slot_size_;
@@ -94,14 +92,16 @@ public:
         mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd_, 0);
         madvise(0, SMALL_SIZE, MADV_SEQUENTIAL | MADV_WILLNEED);
         for (;;) {
-            key_len_ = deserialize(mmap_ + index_);
+            deserialize(mmap_ + index_);
+            key_len_ = integer;
             if (key_len_ == 0)
                 break;
             index_ += int_size;
             if (key_len_ != 0) {
                 key_.assign(mmap_ + index_, key_len_);
                 index_ += key_len_;
-                val_len_ = deserialize(mmap_ + index_);
+                deserialize(mmap_ + index_);
+                val_len_ = integer;
                 index_ += int_size;
                 value_.assign(mmap_ + index_, val_len_);
                 index_ += val_len_;
