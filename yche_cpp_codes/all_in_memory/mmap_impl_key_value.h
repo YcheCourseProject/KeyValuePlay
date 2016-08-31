@@ -18,10 +18,10 @@
 using namespace std;
 constexpr int int_size = sizeof(int);
 int integer;
-
-void serialize(char *buffer, int my_integer) {
-    memcpy(buffer, &my_integer, int_size);
-}
+string key_;
+string value_;
+int key_len_;
+int val_len_;
 
 void deserialize(char *buffer) {
     memcpy(&integer, buffer, int_size);
@@ -74,22 +74,16 @@ private:
     char *mmap_;
     int fd_;
     int index_{0};
-    string key_;
-    string value_;
-    int key_len_;
-    int val_len_;
-    char *buff_;
 
 public:
     Answer() {
         map_.reserve(48000);
-        buff_ = new char[10];
         fd_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
         struct stat st;
         fstat(fd_, &st);
         if (st.st_size != SMALL_SIZE)
             ftruncate(fd_, SMALL_SIZE);
-        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd_, 0);
+        mmap_ = (char *) mmap(NULL, SMALL_SIZE*10, PROT_WRITE | PROT_READ, MAP_SHARED, fd_, 0);
         madvise(0, SMALL_SIZE, MADV_SEQUENTIAL | MADV_WILLNEED);
         for (;;) {
             deserialize(mmap_ + index_);
@@ -121,16 +115,16 @@ public:
     }
 
     void put(string key, string value) {
-        serialize(buff_, key.size());
-        memcpy(mmap_ + index_, buff_, int_size);
+        key_len_ = key.size();
+        memcpy(mmap_ + index_, &key_len_, int_size);
         index_ += int_size;
-        memcpy(mmap_ + index_, key.c_str(), key.size());
-        index_ += key.size();
-        serialize(buff_, value.size());
-        memcpy(mmap_ + index_, buff_, int_size);
+        memcpy(mmap_ + index_, key.c_str(), key_len_);
+        index_ += key_len_;
+        val_len_ = value.size();
+        memcpy(mmap_ + index_, &val_len_, int_size);
         index_ += int_size;
-        memcpy(mmap_ + index_, value.c_str(), value.size());
-        index_ += value.size();
+        memcpy(mmap_ + index_, value.c_str(), val_len_);
+        index_ += val_len_;
         map_.insert_or_replace(key, value);
     }
 };
