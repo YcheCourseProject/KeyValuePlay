@@ -5,133 +5,104 @@
 #ifndef KEYVALUESTORE_ARTHURYANG_SMALL_H
 #define KEYVALUESTORE_ARTHURYANG_SMALL_H
 
-#include <stdio.h>
 #include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <unordered_map>
 #include <vector>
 
-#define MAX_NUM 100100
+#define MAX_OCCUPY_NUM 50000
 #define MAX_HASH (1<<16)
 
 using namespace std;
 
 hash<string> hash_fun;
-//size_t hash_fun(const string & str)
-//{
-//size_t hash = 5381;
-
-//for (char c : str) {
-//hash = ((hash << 5) + hash) + c; [> hash * 33 + c <]
-//}
-
-//return hash;
-//}
 
 struct node {
-    size_t key;
-    string value;
-    int next;
+    size_t key_;
+    string value_;
+    int next_{0};
 
     node() {
-        value.reserve(200);
-        next = 0;
+        value_.reserve(200);
     }
 };
 
-node hash_list[MAX_NUM];
-node *hp;
-int h[MAX_HASH];
-int now_num = 1;
-int now;
-int k;
-
-inline void hash_put(const size_t &key, const string &value) {
-    k = key & 0xffff;
-    now = h[k];
-    while (now) {
-        if (hash_list[now].key == key) {
-            hash_list[now].value = value;
-            return;
+class hash_map {
+private:
+    node occupy_list_[MAX_OCCUPY_NUM];
+    node *hp;
+    int h[MAX_HASH];
+    int node_count_ = 1;
+    int now;
+    int k;
+public:
+    void put(size_t key, const string &value) {
+        k = key & 0xffff;
+        now = h[k];
+        for (; now;) {
+            if (occupy_list_[now].key_ == key) {
+                occupy_list_[now].value_ = value;
+                return;
+            }
+            now = occupy_list_[now].next_;
         }
-        now = hash_list[now].next;
+        occupy_list_[node_count_].key_ = key;
+        occupy_list_[node_count_].value_ = value;
+        occupy_list_[node_count_].next_ = h[k];
+        h[k] = node_count_++;
     }
-    hash_list[now_num].key = key;
-    hash_list[now_num].value = value;
-    hash_list[now_num].next = h[k];
-    h[k] = now_num++;
-}
 
-inline string hash_get(const size_t &key) {
-    now = h[key & 0xffff];
-    while (now) {
-        hp = &hash_list[now];
-        if (hp->key == key) {
-            return hp->value;
+    string get(size_t key) {
+        now = h[key & 0xffff];
+        for (; now;) {
+            hp = &occupy_list_[now];
+            if (hp->key_ == key) {
+                return hp->value_;
+            }
+            now = hp->next_;
         }
-        now = hp->next;
+        return "NULL";
     }
-    return "NULL";
-}
+};
 
 
 class Answer {
-    FILE *fp;
-    unordered_map<size_t, string> m;
-    vector<string> v;
-    unordered_map<size_t, string>::iterator p;
-    string infile;
-    int num;
-    size_t t;
-    unsigned char len;
+    FILE *fp_;
+    size_t t_;
+    unsigned char len_;
+    hash_map map_;
+
 public:
     Answer() {
-        num = 0;
-        fp = fopen("dict", "a");
+        fp_ = fopen("dict", "a");
         FILE *fin = fopen("dict", "rb");
         string value;
         value.reserve(300);
-        infile.reserve(300);
         char s[300];
-        while (fread(&len, sizeof(len), 1, fin)) {
-            //cout << int(len) << endl;
-            fread(&t, sizeof(t), 1, fin);
-            fread(s, sizeof(char), len, fin);
-            s[len] = '\0';
+        while (fread(&len_, sizeof(len_), 1, fin)) {
+            fread(&t_, sizeof(t_), 1, fin);
+            fread(s, sizeof(char), len_, fin);
+            s[len_] = '\0';
             string str(s);
-            //m[t] = str;
-            hash_put(t, str);
+            map_.put(t_, str);
         }
         fclose(fin);
     }
 
-    string get(const string &key) {
-        return hash_get(hash_fun(key));
-        //p = m.find(hash_fun(key));
-        //if (p != m.end()) {
-        //return p->second;
-        //} else {
-        //return "NULL";
-        //}
-    }
-
-    void put(const string &key, const string &value) { //存储KV
-        t = hash_fun(key);
-        len = value.size();
-        hash_put(t, value);
-        fwrite(&len, sizeof(len), 1, fp);
-        fwrite(&t, sizeof(size_t), 1, fp);
-        fwrite(value.c_str(), 1, len, fp);
-
-        //m[t] = value;
-    }
-
     ~Answer() {
-        fclose(fp);
+        fclose(fp_);
+    }
+
+    string get(string key) {
+        return map_.get(hash_fun(key));
+    }
+
+    void put(string key, string value) {
+        t_ = hash_fun(key);
+        len_ = value.size();
+        map_.put(t_, value);
+        fwrite(&len_, sizeof(len_), 1, fp_);
+        fwrite(&t_, sizeof(size_t), 1, fp_);
+        fwrite(value.c_str(), 1, len_, fp_);
     }
 };
-
 
 #endif //KEYVALUESTORE_ARTHURYANG_SMALL_H

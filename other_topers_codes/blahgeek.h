@@ -158,7 +158,7 @@ public:
             memset(header->data_offsets, 0, sizeof(uint32_t) * HASH_ENTRY);
         }
 
-        value_fd = open("value.dat", O_RDWR | O_CREAT, S_IRWXU);
+        value_fd = open("value_.dat", O_RDWR | O_CREAT, S_IRWXU);
         value_filesize = lseek(value_fd, 0, SEEK_END);
         posix_fadvise(value_fd, 0, value_filesize, POSIX_FADV_RANDOM);
 
@@ -209,9 +209,9 @@ public:
 
                 if (k->value_offset != 0)
                     pread(value_fd, value_p, value_len, k->value_offset);
-                else // inline value
+                else // inline value_
                     return std::string(k->value, value_len);
-                // memcpy(value_p, k->value, value_len);
+                // memcpy(value_p, k->value_, value_len);
                 value_p[value_len] = '\0';
                 STR_SET_LEN(value_tmp, value_len);
 

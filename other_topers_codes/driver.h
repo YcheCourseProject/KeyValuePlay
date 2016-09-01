@@ -15,7 +15,7 @@ using namespace std;
 hash<string> ha;
 const int BUCKET_SIZE = 65535;
 struct [[pack]] node {
-    size_t key;
+    size_t key_;
     unsigned int len = 0, offset;
 };
 const static string SN = "NULL";
@@ -23,8 +23,8 @@ const static string SN = "NULL";
 class Answer {
     int dataFd, nodeFd;
     node *nodeBuf;
-    unsigned int len;
-    size_t t;
+    unsigned int len_;
+    size_t t_;
     char s[30010];
     unsigned int offset = 0;
     int pagesize = 1 << 24;
@@ -53,10 +53,10 @@ public:
     }
 
     string get(string key) {
-        t = ha(key);
-        int k = (t & BUCKET_SIZE + BUCKET_SIZE) & BUCKET_SIZE;
+        t_ = ha(key);
+        int k = (t_ & BUCKET_SIZE + BUCKET_SIZE) & BUCKET_SIZE;
         while (nodeBuf[k].len) {
-            if (nodeBuf[k].key == t) {
+            if (nodeBuf[k].key_ == t_) {
                 int p = nodeBuf[k].offset >> 24;
                 if (p + pagelen >= nowpage)
                     return string(dataBuf[p] + (nodeBuf[k].offset & (pagesize - 1)), nodeBuf[k].len);
@@ -69,22 +69,22 @@ public:
     }
 
     void put(string key, string value) {
-        t = ha(key);
-        len = value.size();
-        if (((offset + len - 1) >> 24) != nowpage) {
+        t_ = ha(key);
+        len_ = value.size();
+        if (((offset + len_ - 1) >> 24) != nowpage) {
             if (nowpage >= pagelen)
                 munmap(dataBuf[nowpage - pagelen], pagesize);
             nowpage++;
             dataBuf[nowpage] = (char *) mmap(0, pagesize, PROT_READ | PROT_WRITE, MAP_SHARED, dataFd, nowpage << 24);
             offset = nowpage << 24;
         }
-        memcpy((char *) (dataBuf[nowpage] + (offset & (pagesize - 1))), value.c_str(), len);
-        int k = (t & BUCKET_SIZE + BUCKET_SIZE) & BUCKET_SIZE;
-        while (nodeBuf[k].len && nodeBuf[k].key != t)k = (k + 7) & BUCKET_SIZE;
-        nodeBuf[k].key = t;
-        nodeBuf[k].len = len;
+        memcpy((char *) (dataBuf[nowpage] + (offset & (pagesize - 1))), value.c_str(), len_);
+        int k = (t_ & BUCKET_SIZE + BUCKET_SIZE) & BUCKET_SIZE;
+        while (nodeBuf[k].len && nodeBuf[k].key_ != t_)k = (k + 7) & BUCKET_SIZE;
+        nodeBuf[k].key_ = t_;
+        nodeBuf[k].len = len_;
         nodeBuf[k].offset = offset;
-        offset += len;
+        offset += len_;
     }
 };
 

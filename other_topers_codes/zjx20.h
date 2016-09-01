@@ -169,7 +169,7 @@ public:
             }
         }
 
-        // _data.write(value.c_str(), len)
+        // _data.write(value_.c_str(), len)
         if (unlikely(_pos + len > SEG_SIZE)) {
             // msync(_map_base[_n&INMEM_SEGS_MASK], SEG_SIZE, MS_ASYNC);
             int n = ++_n;
