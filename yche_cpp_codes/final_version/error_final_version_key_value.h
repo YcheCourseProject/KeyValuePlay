@@ -30,8 +30,8 @@ hash<string> hash_func;
 struct [[pack]] key_value_info {
     string key_str_;
     string value_str_;
-    int value_index_{0};
-    int value_length_{0};
+    int val_index_{0};
+    int val_len_{0};
 };
 
 class yche_map {
@@ -50,9 +50,9 @@ public:
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
-                file_stream_.seekg(hash_table_[index].value_index_);
-                file_stream_.read(buffer, hash_table_[index].value_length_);
-                result_str_ = string(buffer, 0, hash_table_[index].value_length_);
+                file_stream_.seekg(hash_table_[index].val_index_);
+                file_stream_.read(buffer, hash_table_[index].val_len_);
+                result_str_ = string(buffer, 0, hash_table_[index].val_len_);
                 return &result_str_;
             }
         }
@@ -63,14 +63,14 @@ public:
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
-                hash_table_[index].value_index_ = value_index;
-                hash_table_[index].value_length_ = value_length;
+                hash_table_[index].val_index_ = value_index;
+                hash_table_[index].val_len_ = value_length;
                 return;
             }
         }
         hash_table_[index].key_str_ = move(key);
-        hash_table_[index].value_index_ = value_index;
-        hash_table_[index].value_length_ = value_length;
+        hash_table_[index].val_index_ = value_index;
+        hash_table_[index].val_len_ = value_length;
     }
 };
 

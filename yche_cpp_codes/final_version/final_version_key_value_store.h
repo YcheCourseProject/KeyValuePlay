@@ -20,8 +20,8 @@ hash<string> hash_func;
 struct key_value_info {
     string key_str_{""};
     string value_str_{""};
-    int value_index_{0};
-    int value_length_{0};
+    int val_index_{0};
+    int val_len_{0};
     int insert_count_{0};
 };
 
@@ -64,7 +64,7 @@ public:
             auto &cur_key_val_info = hash_table_[index];
             --cur_key_val_info.insert_count_;
             if (cur_key_val_info.insert_count_ == 0) {
-                cur_cached_memory_size_ -= cur_key_val_info.value_length_;
+                cur_cached_memory_size_ -= cur_key_val_info.val_len_;
                 cur_key_val_info.value_str_.resize(0);
             }
             slot_index_queue_.pop();
@@ -78,9 +78,9 @@ public:
                 if (hash_table_[index].value_str_.size() > 0)
                     return &hash_table_[index].value_str_;
                 else {
-                    db_stream_.seekg(hash_table_[index].value_index_, ios::beg);
-                    db_stream_.read(value_buffer, hash_table_[index].value_length_);
-                    result_str_ = string(value_buffer, 0, hash_table_[index].value_length_);
+                    db_stream_.seekg(hash_table_[index].val_index_, ios::beg);
+                    db_stream_.read(value_buffer, hash_table_[index].val_len_);
+                    result_str_ = string(value_buffer, 0, hash_table_[index].val_len_);
                     return &result_str_;
                 }
             }
@@ -105,7 +105,7 @@ public:
         }
 
         if (value.size() > 0) {
-            cur_cached_memory_size_ += value.size() - hash_table_[index].value_length_;
+            cur_cached_memory_size_ += value.size() - hash_table_[index].val_len_;
             pop_until_below_threshold();
             hash_table_[index].value_str_ = move(value);
             slot_index_queue_.push(index);
@@ -114,8 +114,8 @@ public:
 
         if (!is_key_already_in)
             hash_table_[index].key_str_ = move(key);
-        hash_table_[index].value_index_ = value_index;
-        hash_table_[index].value_length_ = value_length;
+        hash_table_[index].val_index_ = value_index;
+        hash_table_[index].val_len_ = value_length;
 
     }
 };

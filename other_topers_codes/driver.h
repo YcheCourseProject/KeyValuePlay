@@ -12,15 +12,16 @@
 #include <string>
 
 using namespace std;
+const static string SN = "NULL";
 hash<string> ha;
-const int BUCKET_SIZE = 65535;
-struct [[pack]] node {
+constexpr int BUCKET_SIZE = 65536 * 8 - 1;
+struct node {
     size_t key_;
     unsigned int len = 0, offset;
 };
-const static string SN = "NULL";
 
 class Answer {
+private:
     int dataFd, nodeFd;
     node *nodeBuf;
     unsigned int len_;
@@ -32,6 +33,7 @@ class Answer {
     int nowpage;
     char *dataBuf[120];
     int pagelen = 16;
+
 public:
     Answer() {
         nodeFd = open("redis.index", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
