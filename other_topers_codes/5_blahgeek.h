@@ -5,8 +5,6 @@
 #ifndef KEYVALUESTORE_BLAHGEEK_H
 #define KEYVALUESTORE_BLAHGEEK_H
 
-#define _GNU_SOURCE
-
 #include <iostream>
 #include <string>
 #include <unistd.h>
@@ -24,7 +22,6 @@
 
 using std::string;
 
-// #define MAX_MEM_SIZE (256 * 1024 * 1024)
 #define MAX_VALUE_LENGTH (32 * 1024)
 
 #define HASH_ENTRY (1 * 1024 * 1024)
@@ -35,8 +32,6 @@ using std::string;
 
 #define MAX_INLINE_VALUE_SIZE (28 * 1024)
 #define MAX_INLINE_MEM_SIZE (288 * 1024 * 1024)
-
-#define    FORCE_INLINE inline __attribute__((always_inline))
 
 asm(
 ".text\n"
@@ -266,9 +261,6 @@ public:
         int offset = header->meta_data_size;
         header->meta_data_size += sizeof(Key) + ((value_offset == 0) ? value_len : 0);
         header->data_offsets[hash_idx] = offset;
-
-        // this->dedup_single(hash_idx);
-        // this->dedup_single(k);
     }
 };
 

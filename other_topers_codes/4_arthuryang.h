@@ -179,12 +179,10 @@ public:
 
     string get(string key) {
         t = hash_fun(key);
-
         st = hash_get(t);
         if (st != "N") {
             return st;
         }
-
         hpp = hash_get_point(t);
         if (hpp) {
             fseek(fvalue, hpp->all_len, SEEK_SET);

@@ -17,15 +17,10 @@
 
 using namespace std;
 constexpr int INT_SIZE = sizeof(int);
-int integer;
-string key_;
-string value_;
-int key_len_;
-int val_len_;
 
 hash<string> hash_func;
 
-struct [[pack]]key_value_info {
+struct key_value_info {
     string key_str_;
     string value_str;
 };
@@ -70,6 +65,11 @@ private:
     char *mmap_;
     int fd_;
     int index_{0};
+    int integer;
+    string key_;
+    string value_;
+    int key_len_;
+    int val_len_;
 
 public:
     Answer() {
@@ -79,7 +79,7 @@ public:
         fstat(fd_, &st);
         if (st.st_size != SMALL_SIZE)
             ftruncate(fd_, SMALL_SIZE);
-        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd_, 0);
+        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED | MAP_POPULATE, fd_, 0);
         madvise(0, SMALL_SIZE, MADV_SEQUENTIAL | MADV_WILLNEED);
         for (;;) {
             memcpy(&integer, mmap_ + index_, INT_SIZE);

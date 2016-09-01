@@ -19,8 +19,6 @@
 
 using namespace std;
 
-// #define _DEBUG
-
 #define IL __attribute__((always_inline))
 #define likely(x) __builtin_expect((x),1)
 #define unlikely(x) __builtin_expect((x),0)
@@ -30,8 +28,6 @@ typedef size_t kk_t;
 const int SMALL_BUCKET_SIZE = 48000;
 #define HASH(x) hash<string>()(x)
 static string STR_NULL = "NULL";
-
-// #pragma pack(1)
 
 int open_file(const char *name, int size) {
     int fd = open(name, O_RDWR | O_CREAT | O_NOATIME, S_IRUSR | S_IWUSR);
@@ -95,10 +91,6 @@ public:
     ~Answer() {}
 
     IL string get(const string &key) {
-        // if (unlikely(_level == 0)) {
-        //   return STR_NULL;
-        // }
-
         kk_t k = HASH(key);
         IndexItem *item = _begin + (k) % _size;;
         while (true) {
@@ -113,17 +105,14 @@ public:
             static string str;
             int len = item->len;
             str.resize(len);
-            // _data.read(item->pos, item->len, (void*)str.c_str());
             uint32_t pos = item->pos;
             int seg = (pos >> POS_BITS) & SEG_MASK;
             int real_pos = pos & POS_MASK;
             if (likely(seg + INMEM_SEGS > _n)) {
-                // return _map_base[seg & INMEM_SEGS_MASK] + real_pos;
                 memcpy((void *) str.c_str(), _map_base[seg & INMEM_SEGS_MASK] + real_pos, len);
             } else {
                 // static char buf[31*1024];
                 pread(_fds[seg], (void *) str.c_str(), len, real_pos);
-                // return buf;
             }
             return str;
         } else {

@@ -1,1 +1,1 @@
-add_executable(arthuryang.h arthuryang_small.h blahgeek.h driver.h sanjose.h sanjose_small.h zjx20.h test.cpp)
+add_executable(gogogo 4_arthuryang.h small_arthuryang.h 5_blahgeek.h 2_driver.h 3_sanjose.h small_sanjose.h 1_zjx20.h test.cpp)
