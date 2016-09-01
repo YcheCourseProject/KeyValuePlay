@@ -24,10 +24,10 @@ extern "C" {
 long long FILESIZE = 2317824000;
 
 // // for small dataset
-// #define POOLSIZE 368640
-// #define MAXSLOTS 20800
-// #define MC (16*1024*1024)
-// long long FILESIZE = 25534464;
+//#define POOLSIZE 368640
+//#define MAXSLOTS 20800
+//#define MC (16*1024*1024)
+//long long FILESIZE = 25534464;
 
 #define MCW (4*1024*1024)
 #define IDXSIZE (1024*1024*4*4)

@@ -20,7 +20,7 @@
 
 using namespace std;
 
-inline size_t get_file_size(int file_descriptor) {
+size_t get_file_size(int file_descriptor) {
     struct stat st;
     fstat(file_descriptor, &st);
     return st.st_size;
@@ -34,8 +34,8 @@ private:
     int index_{0};
 
 public:
-    inline Answer() {
-        map_.reserve(90000);
+    Answer() {
+        map_.reserve(60000);
         fstream input_file_stream{FILE_NAME, ios::in | ios::binary};
         string key_str;
         string value_str;
@@ -53,7 +53,7 @@ public:
         mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
-    inline string get(string key) {
+    string get(string key) {
         auto result = map_.find(key);
         if (result != map_.end()) {
             return result->second;
@@ -63,7 +63,7 @@ public:
         }
     }
 
-    inline void put(string key, string value) {
+    void put(string key, string value) {
         memcpy(mmap_ + index_, key.c_str(), key.size());
         index_ += key.size();
         mmap_[index_] = '\n';
