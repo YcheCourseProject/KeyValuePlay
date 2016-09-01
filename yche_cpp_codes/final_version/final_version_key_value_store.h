@@ -19,7 +19,7 @@ hash<string> hash_func;
 
 struct key_value_info {
     string key_str_{""};
-    string value_str_{""};
+    string val_str_{""};
     int val_index_{0};
     int val_len_{0};
     int insert_count_{0};
@@ -32,7 +32,7 @@ private:
 
     vector<key_value_info> hash_table_;
     queue<int> slot_index_queue_;
-    char *value_buffer;
+    char *val_buffer;
     string result_str_;
 
     size_t max_slot_size_{slot_num};
@@ -42,7 +42,7 @@ private:
 public:
     inline yche_map() : hash_table_(slot_num) {
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
-        value_buffer = new char[1024 * 32];
+        val_buffer = new char[1024 * 32];
     }
 
     inline void resize(int size) {
@@ -51,7 +51,7 @@ public:
     }
 
     inline ~yche_map() {
-        delete[]value_buffer;
+        delete[]val_buffer;
     }
 
     inline void set_max_cached_memory_size(int size) {
@@ -65,7 +65,7 @@ public:
             --cur_key_val_info.insert_count_;
             if (cur_key_val_info.insert_count_ == 0) {
                 cur_cached_memory_size_ -= cur_key_val_info.val_len_;
-                cur_key_val_info.value_str_.resize(0);
+                cur_key_val_info.val_str_.resize(0);
             }
             slot_index_queue_.pop();
         }
@@ -75,12 +75,12 @@ public:
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
-                if (hash_table_[index].value_str_.size() > 0)
-                    return &hash_table_[index].value_str_;
+                if (hash_table_[index].val_str_.size() > 0)
+                    return &hash_table_[index].val_str_;
                 else {
                     db_stream_.seekg(hash_table_[index].val_index_, ios::beg);
-                    db_stream_.read(value_buffer, hash_table_[index].val_len_);
-                    result_str_ = string(value_buffer, 0, hash_table_[index].val_len_);
+                    db_stream_.read(val_buffer, hash_table_[index].val_len_);
+                    result_str_ = string(val_buffer, 0, hash_table_[index].val_len_);
                     return &result_str_;
                 }
             }
@@ -107,7 +107,7 @@ public:
         if (value.size() > 0) {
             cur_cached_memory_size_ += value.size() - hash_table_[index].val_len_;
             pop_until_below_threshold();
-            hash_table_[index].value_str_ = move(value);
+            hash_table_[index].val_str_ = move(value);
             slot_index_queue_.push(index);
             ++hash_table_[index].insert_count_;
         }

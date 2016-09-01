@@ -5,4 +5,4 @@
 ./test_mmap small.db 0 1000
 ```   
 - then memory works as the cache for disk
-- you specify the start offset, e.g, 0 here and the length, e.g, 1000 here
+- you specify the start offset_, e.g, 0 here and the length, e.g, 1000 here

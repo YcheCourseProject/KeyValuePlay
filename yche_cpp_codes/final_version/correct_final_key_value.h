@@ -1,12 +1,10 @@
 //
 // Created by cheyulin on 8/23/16.
 //
-
 #ifndef KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
 #define KEYVALUESTORE_FINAL_VERSION_KEY_VALUE_STORE_H
 
 #include <algorithm>
-#include <string>
 #include <fstream>
 
 #define INDEX_NAME "index.meta"
@@ -18,7 +16,7 @@ hash<string> hash_func;
 
 struct key_value_info {
     string key_str_;
-    string value_str_;
+    string val_str_;
     int val_index_{0};
     int val_len_{0};
 };
@@ -29,7 +27,6 @@ private:
     vector<key_value_info> hash_table_;
     char *value_buffer;
     string result_str_;
-
     int cur_cached_val_size_{0};
     int max_cached_val_size_{0};
     int max_slot_size_{0};
@@ -38,6 +35,7 @@ public:
     yche_map() {
         db_stream_.open(DB_NAME, ios::in | ios::binary);
         value_buffer = new char[1024 * 32];
+        result_str_.reserve(1024 * 32);
     }
 
     ~yche_map() {
@@ -57,12 +55,12 @@ public:
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
-                if (hash_table_[index].value_str_.size() > 0)
-                    return &hash_table_[index].value_str_;
+                if (hash_table_[index].val_str_.size() > 0)
+                    return &hash_table_[index].val_str_;
                 else {
                     db_stream_.seekg(hash_table_[index].val_index_, ios::beg);
                     db_stream_.read(value_buffer, hash_table_[index].val_len_);
-                    result_str_ = string(value_buffer, 0, hash_table_[index].val_len_);
+                    result_str_.assign(value_buffer, 0, hash_table_[index].val_len_);
                     return &result_str_;
                 }
             }
@@ -76,8 +74,8 @@ public:
             if (hash_table_[index].key_str_ == key) {
                 hash_table_[index].val_index_ = value_index;
                 hash_table_[index].val_len_ = value_length;
-                if (hash_table_[index].value_str_.size() != 0)
-                    hash_table_[index].value_str_ = move(value);
+                if (hash_table_[index].val_str_.size() != 0)
+                    hash_table_[index].val_str_ = move(value);
                 return;
             }
         }
@@ -87,7 +85,7 @@ public:
 
         if (cur_cached_val_size_ < max_cached_val_size_) {
             ++cur_cached_val_size_;
-            hash_table_[index].value_str_ = move(value);
+            hash_table_[index].val_str_ = move(value);
         }
     }
 };
@@ -99,6 +97,7 @@ private:
     fstream db_stream_;
     int val_index_{0};
     int val_len_{0};
+    int key_len_{0};
     int threshold_{0};
     bool is_init_{false};
 
@@ -123,7 +122,7 @@ private:
 
 public:
     Answer() {
-        char *value_buf_ = new char[32 * 1024];
+        char *val_buf_ = new char[32 * 1024];
         index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
         string key_str;
@@ -142,8 +141,8 @@ public:
                     init_map();
                 if (val_index_ >= threshold_) {
                     db_stream_.seekg(val_index_, ios::beg);
-                    db_stream_.read(value_buf_, val_len_);
-                    value_str = string(value_buf_, 0, val_len_);
+                    db_stream_.read(val_buf_, val_len_);
+                    value_str = string(val_buf_, 0, val_len_);
                     map_.insert_or_replace(key_str, val_index_, val_len_, value_str);
                 }
                 else
@@ -151,7 +150,7 @@ public:
             }
         }
         val_index_ = val_index_ + val_len_;
-        delete[]value_buf_;
+        delete[]val_buf_;
         index_stream_.clear();
     }
 
@@ -167,6 +166,7 @@ public:
 
     void put(string key, string value) {
         val_len_ = value.size();
+        key_len_ = key.size();
         [[unlikely(true)]]
         if (!is_init_)
             init_map();

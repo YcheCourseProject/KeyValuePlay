@@ -22,7 +22,7 @@ main(int argc, char *argv[]) {
     ssize_t s;
 
     if (argc < 3 || argc > 4) {
-        fprintf(stderr, "%s file offset [length]\n", argv[0]);
+        fprintf(stderr, "%s file offset_ [length]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
@@ -35,10 +35,10 @@ main(int argc, char *argv[]) {
 
     offset = atoi(argv[2]);
     pa_offset = offset & ~(sysconf(_SC_PAGE_SIZE) - 1);
-    /* offset for mmap() must be page aligned */
+    /* offset_ for mmap() must be page aligned */
 
     if (offset >= sb.st_size) {
-        fprintf(stderr, "offset is past end of file\n");
+        fprintf(stderr, "offset_ is past end of file\n");
         exit(EXIT_FAILURE);
     }
 

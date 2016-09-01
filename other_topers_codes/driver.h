@@ -17,7 +17,7 @@ hash<string> ha;
 constexpr int BUCKET_SIZE = 65536 * 8 - 1;
 struct node {
     size_t key_;
-    unsigned int len = 0, offset;
+    unsigned int len_ = 0, offset_;
 };
 
 class Answer {
@@ -43,8 +43,8 @@ public:
         dataFd = open("redis.data", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         ftruncate(dataFd, pagesize * pagenum);
         for (int i = 0; i <= BUCKET_SIZE; i++) {
-            if (offset > nodeBuf[i].offset + nodeBuf[i].len)continue;
-            offset = nodeBuf[i].offset + nodeBuf[i].len;
+            if (offset > nodeBuf[i].offset_ + nodeBuf[i].len_)continue;
+            offset = nodeBuf[i].offset_ + nodeBuf[i].len_;
         }
         nowpage = offset >> 24;
         for (int i = 0; i <= pagelen; i++) {
@@ -57,13 +57,13 @@ public:
     string get(string key) {
         t_ = ha(key);
         int k = (t_ & BUCKET_SIZE + BUCKET_SIZE) & BUCKET_SIZE;
-        while (nodeBuf[k].len) {
+        while (nodeBuf[k].len_) {
             if (nodeBuf[k].key_ == t_) {
-                int p = nodeBuf[k].offset >> 24;
+                int p = nodeBuf[k].offset_ >> 24;
                 if (p + pagelen >= nowpage)
-                    return string(dataBuf[p] + (nodeBuf[k].offset & (pagesize - 1)), nodeBuf[k].len);
-                pread(dataFd, s, nodeBuf[k].len, nodeBuf[k].offset);
-                return string(s, nodeBuf[k].len);
+                    return string(dataBuf[p] + (nodeBuf[k].offset_ & (pagesize - 1)), nodeBuf[k].len_);
+                pread(dataFd, s, nodeBuf[k].len_, nodeBuf[k].offset_);
+                return string(s, nodeBuf[k].len_);
             }
             k = (k + 7) & BUCKET_SIZE;
         }
@@ -82,10 +82,10 @@ public:
         }
         memcpy((char *) (dataBuf[nowpage] + (offset & (pagesize - 1))), value.c_str(), len_);
         int k = (t_ & BUCKET_SIZE + BUCKET_SIZE) & BUCKET_SIZE;
-        while (nodeBuf[k].len && nodeBuf[k].key_ != t_)k = (k + 7) & BUCKET_SIZE;
+        while (nodeBuf[k].len_ && nodeBuf[k].key_ != t_)k = (k + 7) & BUCKET_SIZE;
         nodeBuf[k].key_ = t_;
-        nodeBuf[k].len = len_;
-        nodeBuf[k].offset = offset;
+        nodeBuf[k].len_ = len_;
+        nodeBuf[k].offset_ = offset;
         offset += len_;
     }
 };

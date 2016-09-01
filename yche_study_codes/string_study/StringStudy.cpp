@@ -9,7 +9,7 @@ using namespace std;
 
 struct key_value_info {
     string key_str_{""};
-    string value_str_{""};
+    string val_str_{""};
     int val_index_{0};
     int val_len_{0};
     int insert_count_{0};
