@@ -23,13 +23,9 @@ string value_;
 int key_len_;
 int val_len_;
 
-void deserialize(char *buffer) {
-    memcpy(&integer, buffer, INT_SIZE);
-}
-
 hash<string> hash_func;
 
-struct key_value_info {
+struct [[pack]]key_value_info {
     string key_str_;
     string value_str;
 };
@@ -86,7 +82,7 @@ public:
         mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd_, 0);
         madvise(0, SMALL_SIZE, MADV_SEQUENTIAL | MADV_WILLNEED);
         for (;;) {
-            deserialize(mmap_ + index_);
+            memcpy(&integer, mmap_ + index_, INT_SIZE);
             key_len_ = integer;
             if (key_len_ == 0)
                 break;
@@ -94,7 +90,7 @@ public:
             if (key_len_ != 0) {
                 key_.assign(mmap_ + index_, key_len_);
                 index_ += key_len_;
-                deserialize(mmap_ + index_);
+                memcpy(&integer, mmap_ + index_, INT_SIZE);
                 val_len_ = integer;
                 index_ += INT_SIZE;
                 value_.assign(mmap_ + index_, val_len_);
