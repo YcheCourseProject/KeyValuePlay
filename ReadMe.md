@@ -1,11 +1,11 @@
 #Key-Value Store
 ##Problem Feature
 ###Key-Value alignment boundary is fixed as follows(Unit:Byte)
-Key-Alignment | Value-Alignment-Old | Value-Alignment-New | flag-for-transaction
-------------- | ------------------- | ------------------- | --------------------
-10~70         | 80~160              | 80~160              | 1
-10~300         | 1k~3k              | 1k~3k              | 1
-1k~3k         | 10k~30k              | 10k~30k              | 1
+Key-Alignment | Value-Alignment
+------------- | -------------------
+10~70         | 80~160            
+10~300         | 1k~3k            
+1k~3k         | 10k~30k             
 
 ###Key-Value is string, string type
 ###Not Require LRU-Cache, get(), put() is in random manner
@@ -13,6 +13,10 @@ Key-Alignment | Value-Alignment-Old | Value-Alignment-New | flag-for-transaction
 ##My Solution
 - [small dataset with mmap](yche_cpp_codes/all_in_memory/mmap_impl_key_value.h)
 - [all dataset with fstream](yche_cpp_codes/final_version/correct_final_key_value.h)
+
+##My Study Codes
+- [some study codes](yche_cpp_codes)
+- [some third party codes](third_party)
 
 ##Other Top-Coders Solutions
 ###General Sol
