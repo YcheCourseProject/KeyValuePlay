@@ -9,6 +9,7 @@
 
 #define INDEX_NAME "index.meta"
 #define DB_NAME "value.db"
+#define unlikely(x) __builtin_expect((x),0)
 
 using namespace std;
 string empty_str;
@@ -114,7 +115,7 @@ private:
         }
         else {
             map_.resize(50000);
-            map_.set_max_cached_value_size(10000);
+            map_.set_max_cached_value_size(11000);
             threshold_ = file_size + 1;
         }
         is_init_ = true;
@@ -136,13 +137,12 @@ public:
                 getline(index_stream_, length_str);
                 val_index_ = stoi(prefix_sum_index_str);
                 val_len_ = stoi(length_str);
-                [[unlikely(true)]]
-                if (!is_init_)
+                if (unlikely(!is_init_))
                     init_map();
                 if (val_index_ >= threshold_) {
                     db_stream_.seekg(val_index_, ios::beg);
                     db_stream_.read(val_buf_, val_len_);
-                    value_str = string(val_buf_, 0, val_len_);
+                    value_str.assign(val_buf_, 0, val_len_);
                     map_.insert_or_replace(key_str, val_index_, val_len_, value_str);
                 }
                 else
@@ -167,8 +167,7 @@ public:
     void put(string key, string value) {
         val_len_ = value.size();
         key_len_ = key.size();
-        [[unlikely(true)]]
-        if (!is_init_)
+        if (unlikely(!is_init_))
             init_map();
         index_stream_ << key << "\n" << val_index_ << "\n" << val_len_ << "\n" << flush;
         db_stream_ << value << flush;
