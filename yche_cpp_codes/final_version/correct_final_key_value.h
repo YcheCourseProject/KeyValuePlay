@@ -118,7 +118,7 @@ private:
         } else if (val_len_ <= 3000) {
             map_.resize(500000);
             map_.set_max_cached_value_size(800000);
-            threshold_ = file_size_ - 20000000;
+            threshold_ = file_size_ + 1;
         }
         else {
             map_.resize(50000);
@@ -169,7 +169,6 @@ public:
         read_file();
         index_stream_.open(INDEX_NAME, ios::app | ios::binary);
         db_stream_.open(DB_NAME, ios::app | ios::binary);
-
     }
 
     string get(string key) {
