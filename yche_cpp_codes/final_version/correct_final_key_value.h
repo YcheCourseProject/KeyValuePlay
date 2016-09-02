@@ -6,7 +6,11 @@
 
 #include <algorithm>
 #include <fstream>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "fcntl.h"
 
+constexpr int INT_SIZE = sizeof(int);
 #define INDEX_NAME "index.meta"
 #define DB_NAME "value.db"
 #define unlikely(x) __builtin_expect((x),0)
@@ -16,6 +20,7 @@ string empty_str;
 const static string NULL_STR = "NULL";
 
 hash<string> hash_func;
+
 struct key_value_info {
     string key_str_;
     string val_str_;
@@ -95,64 +100,76 @@ public:
 class Answer {
 private:
     yche_map map_;
-    fstream index_stream_;
-    fstream db_stream_;
+    ofstream index_stream_;
+    ofstream db_stream_;
+    int key_len_{0};
     int val_index_{0};
     int val_len_{0};
-    int key_len_{0};
     int threshold_{0};
+    int file_size_{0};
     bool is_init_{false};
+    string key_str_;
+    string value_str_;
 
     void init_map() {
-        db_stream_.seekg(0, ios::end);
-        int file_size = db_stream_.tellg();
         if (val_len_ <= 160) {
             map_.resize(50000);
             map_.set_max_cached_value_size(250000);
         } else if (val_len_ <= 3000) {
             map_.resize(500000);
             map_.set_max_cached_value_size(800000);
-            threshold_ = file_size + 1;
+            threshold_ = file_size_ - 20000000;
         }
         else {
             map_.resize(50000);
             map_.set_max_cached_value_size(11000);
-            threshold_ = file_size + 1;
+            threshold_ = file_size_ + 1;
         }
         is_init_ = true;
     }
 
 public:
-    Answer() {
-        char *val_buf_ = new char[32 * 1024];
-        index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
-        db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
-        string key_str;
-        string prefix_sum_index_str;
-        string length_str;
-        string value_str;
-        for (; index_stream_.good();) {
-            getline(index_stream_, key_str);
-            if (index_stream_.good()) {
-                getline(index_stream_, prefix_sum_index_str);
-                getline(index_stream_, length_str);
-                val_index_ = stoi(prefix_sum_index_str);
-                val_len_ = stoi(length_str);
+    void get_db_file_size() {
+        int fd_ = open(DB_NAME, O_RDONLY | O_CREAT, 0600);
+        struct stat st;
+        fstat(fd_, &st);
+        file_size_ = st.st_size;
+    }
+
+    void read_file() {
+        char *buf_ = new char[32 * 1024];
+        ifstream index_stream(INDEX_NAME, ios::binary);
+        ifstream db_stream(DB_NAME, ios::binary);
+        for (; index_stream.good();) {
+            index_stream.read((char *) &key_len_, INT_SIZE);
+            index_stream.read(buf_, key_len_);
+            if (index_stream.good()) {
+                key_str_.assign(buf_, key_len_);
+                index_stream.read((char *) &val_index_, INT_SIZE);
+                index_stream.read((char *) &val_len_, INT_SIZE);
                 if (unlikely(!is_init_))
                     init_map();
                 if (val_index_ >= threshold_) {
-                    db_stream_.seekg(val_index_, ios::beg);
-                    db_stream_.read(val_buf_, val_len_);
-                    value_str.assign(val_buf_, 0, val_len_);
-                    map_.put(key_str, val_index_, val_len_, value_str);
+                    db_stream.seekg(val_index_, ios::beg);
+                    db_stream.read(buf_, val_len_);
+                    value_str_.assign(buf_, 0, val_len_);
+                    map_.put(key_str_, val_index_, val_len_, value_str_);
                 }
                 else
-                    map_.put(key_str, val_index_, val_len_);
+                    map_.put(key_str_, val_index_, val_len_);
             }
         }
         val_index_ = val_index_ + val_len_;
-        delete[]val_buf_;
-        index_stream_.clear();
+        delete[]buf_;
+    }
+
+    Answer() {
+        ios::sync_with_stdio(false);
+        get_db_file_size();
+        read_file();
+        index_stream_.open(INDEX_NAME, ios::app | ios::binary);
+        db_stream_.open(DB_NAME, ios::app | ios::binary);
+
     }
 
     string get(string key) {
@@ -164,8 +181,15 @@ public:
         key_len_ = key.size();
         if (unlikely(!is_init_))
             init_map();
-        index_stream_ << key << "\n" << val_index_ << "\n" << val_len_ << "\n" << flush;
-        db_stream_ << value << flush;
+        index_stream_.write((const char *) &key_len_, INT_SIZE);
+        index_stream_.write(key.c_str(), key_len_);
+        index_stream_.write((const char *) &val_index_, INT_SIZE);
+        index_stream_.write((const char *) &val_len_, INT_SIZE);
+        index_stream_.flush();
+
+        db_stream_.write(value.c_str(), val_len_);
+        db_stream_.flush();
+
         map_.put(key, val_index_, val_len_, value);
         val_index_ += val_len_;
     }
