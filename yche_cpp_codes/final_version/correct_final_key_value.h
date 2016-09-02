@@ -184,13 +184,14 @@ public:
         index_stream_.write(key.c_str(), key_len_);
         index_stream_.write((const char *) &val_index_, INT_SIZE);
         index_stream_.write((const char *) &val_len_, INT_SIZE);
-        index_stream_.flush();
 
         db_stream_.write(value.c_str(), val_len_);
-        db_stream_.flush();
 
         map_.put(key, val_index_, val_len_, value);
         val_index_ += val_len_;
+
+        index_stream_.flush();
+        db_stream_.flush();
     }
 };
 
