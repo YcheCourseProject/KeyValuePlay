@@ -17,6 +17,7 @@
 
 using namespace std;
 constexpr int INT_SIZE = sizeof(int);
+const static string NULL_STR = "NULL";
 
 struct fast_hash_func {
     size_t operator()(const string &__s) const noexcept {
@@ -42,17 +43,17 @@ public:
         max_slot_size_ = size;
     }
 
-    string *find(const string &key) {
+    string get(const string &key) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
-                return &hash_table_[index].value_str;
+                return hash_table_[index].value_str;
             }
         }
-        return nullptr;
+        return NULL_STR;
     }
 
-    void insert_or_replace(string &key, string &value) {
+    void put(string &key, string &value) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
@@ -68,7 +69,7 @@ public:
 class Answer {
 private:
     yche_map map_;
-    char *mmap_;
+    char *mmap_buffer_;
     int fd_;
     int index_{0};
     int integer;
@@ -85,49 +86,42 @@ public:
         fstat(fd_, &st);
         if (st.st_size != SMALL_SIZE)
             ftruncate(fd_, SMALL_SIZE);
-        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED | MAP_POPULATE, fd_, 0);
-        madvise(0, SMALL_SIZE, MADV_SEQUENTIAL | MADV_WILLNEED);
+        mmap_buffer_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED | MAP_POPULATE, fd_, 0);
         for (;;) {
-            memcpy(&integer, mmap_ + index_, INT_SIZE);
+            memcpy(&integer, mmap_buffer_ + index_, INT_SIZE);
             key_len_ = integer;
             if (key_len_ == 0)
                 break;
             index_ += INT_SIZE;
             if (key_len_ != 0) {
-                key_.assign(mmap_ + index_, key_len_);
+                key_.assign(mmap_buffer_ + index_, key_len_);
                 index_ += key_len_;
-                memcpy(&integer, mmap_ + index_, INT_SIZE);
+                memcpy(&integer, mmap_buffer_ + index_, INT_SIZE);
                 val_len_ = integer;
                 index_ += INT_SIZE;
-                value_.assign(mmap_ + index_, val_len_);
+                value_.assign(mmap_buffer_ + index_, val_len_);
                 index_ += val_len_;
-                map_.insert_or_replace(key_, value_);
+                map_.put(key_, value_);
             }
         }
     }
 
     string get(string key) {
-        auto result = map_.find(key);
-        if (result != nullptr) {
-            return *result;
-        }
-        else {
-            return "NULL";
-        }
+        return map_.get(key);
     }
 
     void put(string key, string value) {
         key_len_ = key.size();
-        memcpy(mmap_ + index_, &key_len_, INT_SIZE);
+        memcpy(mmap_buffer_ + index_, &key_len_, INT_SIZE);
         index_ += INT_SIZE;
-        memcpy(mmap_ + index_, key.c_str(), key_len_);
+        memcpy(mmap_buffer_ + index_, key.c_str(), key_len_);
         index_ += key_len_;
         val_len_ = value.size();
-        memcpy(mmap_ + index_, &val_len_, INT_SIZE);
+        memcpy(mmap_buffer_ + index_, &val_len_, INT_SIZE);
         index_ += INT_SIZE;
-        memcpy(mmap_ + index_, value.c_str(), val_len_);
+        memcpy(mmap_buffer_ + index_, value.c_str(), val_len_);
         index_ += val_len_;
-        map_.insert_or_replace(key, value);
+        map_.put(key, value);
     }
 };
 

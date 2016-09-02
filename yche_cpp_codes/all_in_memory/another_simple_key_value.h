@@ -30,7 +30,7 @@ class Answer {
 private:
     unordered_map<string, string> map_;
     int file_descriptor_;
-    char *mmap_;
+    char *mmap_buffer_;
     int index_{0};
 
 public:
@@ -50,7 +50,7 @@ public:
         file_descriptor_ = open(FILE_NAME, O_RDWR | O_CREAT, 0600);
         if (get_file_size(file_descriptor_) != 6000000)
             ftruncate(file_descriptor_, 6000000);
-        mmap_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
+        mmap_buffer_ = (char *) mmap(0, 6000000, PROT_WRITE, MAP_SHARED, file_descriptor_, 0);
     }
 
     string get(string key) {
@@ -64,13 +64,13 @@ public:
     }
 
     void put(string key, string value) {
-        memcpy(mmap_ + index_, key.c_str(), key.size());
+        memcpy(mmap_buffer_ + index_, key.c_str(), key.size());
         index_ += key.size();
-        mmap_[index_] = '\n';
+        mmap_buffer_[index_] = '\n';
         ++index_;
-        memcpy(mmap_ + index_, value.c_str(), value.size());
+        memcpy(mmap_buffer_ + index_, value.c_str(), value.size());
         index_ += value.size();
-        mmap_[index_] = '\n';
+        mmap_buffer_[index_] = '\n';
         ++index_;
         map_[move(key)] = move(value);
     }

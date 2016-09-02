@@ -13,9 +13,9 @@
 
 using namespace std;
 string empty_str;
+const static string NULL_STR = "NULL";
 
 hash<string> hash_func;
-
 struct key_value_info {
     string key_str_;
     string val_str_;
@@ -53,24 +53,24 @@ public:
         max_slot_size_ = size;
     }
 
-    string *find(const string &key) {
+    string get(const string &key) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
                 if (hash_table_[index].val_str_.size() > 0)
-                    return &hash_table_[index].val_str_;
+                    return hash_table_[index].val_str_;
                 else {
                     db_stream_.seekg(hash_table_[index].val_index_, ios::beg);
                     db_stream_.read(value_buffer, hash_table_[index].val_len_);
                     result_str_.assign(value_buffer, 0, hash_table_[index].val_len_);
-                    return &result_str_;
+                    return result_str_;
                 }
             }
         }
-        return nullptr;
+        return NULL_STR;
     }
 
-    void insert_or_replace(string &key, int value_index, int value_length, string &value = empty_str) {
+    void put(string &key, int value_index, int value_length, string &value = empty_str) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
@@ -144,10 +144,10 @@ public:
                     db_stream_.seekg(val_index_, ios::beg);
                     db_stream_.read(val_buf_, val_len_);
                     value_str.assign(val_buf_, 0, val_len_);
-                    map_.insert_or_replace(key_str, val_index_, val_len_, value_str);
+                    map_.put(key_str, val_index_, val_len_, value_str);
                 }
                 else
-                    map_.insert_or_replace(key_str, val_index_, val_len_);
+                    map_.put(key_str, val_index_, val_len_);
             }
         }
         val_index_ = val_index_ + val_len_;
@@ -156,13 +156,7 @@ public:
     }
 
     string get(string key) {
-        auto str_ptr = map_.find(key);
-        if (str_ptr == nullptr) {
-            return "NULL";
-        }
-        else {
-            return *str_ptr;
-        }
+        return map_.get(key);
     }
 
     void put(string key, string value) {
@@ -172,7 +166,7 @@ public:
             init_map();
         index_stream_ << key << "\n" << val_index_ << "\n" << val_len_ << "\n" << flush;
         db_stream_ << value << flush;
-        map_.insert_or_replace(key, val_index_, val_len_, value);
+        map_.put(key, val_index_, val_len_, value);
         val_index_ += val_len_;
     }
 };

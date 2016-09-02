@@ -80,7 +80,7 @@ public:
         return current_size_;
     }
 
-    inline string *find(const string &key) {
+    inline string *get(const string &key) {
         auto index = HASH_FUNC(key) % max_slot_size_;
         for (; hash_table_[index].first.size() != 0; index = (++index) % max_slot_size_) {
             if (hash_table_[index].first == key) {
@@ -159,7 +159,7 @@ public:
         map_.reset_info(serialization_info_);
 
         input_file_stream.clear();
-        auto string_ptr = map_.find(key);
+        auto string_ptr = map_.get(key);
         if (string_ptr == nullptr)
             return "NULL";
         else

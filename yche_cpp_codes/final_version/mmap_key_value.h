@@ -49,7 +49,7 @@ public:
         max_slot_size_ = size;
     }
 
-    inline string *find(const string &key) {
+    inline string *get(const string &key) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
@@ -74,7 +74,7 @@ public:
 
 class Answer {
 private:
-    char *mmap_;
+    char *mmap_buffer_;
     int fd_;
     int index_{0};
     string key_;
@@ -93,29 +93,29 @@ public:
         fstat(fd_, &st);
         if (st.st_size != SMALL_SIZE)
             ftruncate(fd_, SMALL_SIZE);
-        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_READ, MAP_PRIVATE, fd_, 0);
+        mmap_buffer_ = (char *) mmap(NULL, SMALL_SIZE, PROT_READ, MAP_PRIVATE, fd_, 0);
         madvise(0, SMALL_SIZE, MADV_SEQUENTIAL | MADV_WILLNEED);
         for (;;) {
-            key_len_ = deserialize(mmap_ + index_);
+            key_len_ = deserialize(mmap_buffer_ + index_);
             if (key_len_ == 0)
                 break;
             index_ += sizeof(int);
             if (key_len_ != 0) {
-                key_.assign(mmap_ + index_, key_len_);
+                key_.assign(mmap_buffer_ + index_, key_len_);
                 index_ += key_len_;
-                val_len_ = deserialize(mmap_ + index_);
+                val_len_ = deserialize(mmap_buffer_ + index_);
                 index_ += INT_SIZE;
-                value_.assign(mmap_ + index_, val_len_);
+                value_.assign(mmap_buffer_ + index_, val_len_);
                 index_ += val_len_;
                 map_.insert_or_replace(move(key_), move(value_));
             }
         }
-        munmap(mmap_, SMALL_SIZE);
-        mmap_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE, MAP_SHARED, fd_, 0);
+        munmap(mmap_buffer_, SMALL_SIZE);
+        mmap_buffer_ = (char *) mmap(NULL, SMALL_SIZE, PROT_WRITE, MAP_SHARED, fd_, 0);
     }
 
     inline string get(string key) {
-        auto result = map_.find(key);
+        auto result = map_.get(key);
         if (result != nullptr) {
             return *result;
         }
@@ -126,14 +126,14 @@ public:
 
     inline void put(string key, string value) {
         serialize(buff_, key.size());
-        memcpy(mmap_ + index_, buff_, INT_SIZE);
+        memcpy(mmap_buffer_ + index_, buff_, INT_SIZE);
         index_ += INT_SIZE;
-        memcpy(mmap_ + index_, key.c_str(), key.size());
+        memcpy(mmap_buffer_ + index_, key.c_str(), key.size());
         index_ += key.size();
         serialize(buff_, value.size());
-        memcpy(mmap_ + index_, buff_, INT_SIZE);
+        memcpy(mmap_buffer_ + index_, buff_, INT_SIZE);
         index_ += INT_SIZE;
-        memcpy(mmap_ + index_, value.c_str(), value.size());
+        memcpy(mmap_buffer_ + index_, value.c_str(), value.size());
         index_ += value.size();
         map_.insert_or_replace(move(key), move(value));
     }

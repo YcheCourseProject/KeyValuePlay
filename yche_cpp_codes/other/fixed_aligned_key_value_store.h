@@ -69,7 +69,7 @@ public:
         return current_size_;
     }
 
-    inline T *find(const string &key) {
+    inline T *get(const string &key) {
         auto index = HASH_FUNC(key) % max_slot_size_;
         //linear probing
         for (; hash_table_[index].first.size() != 0; index = (++index) % max_slot_size_) {
@@ -235,15 +235,15 @@ public:
     }
 
     inline string get(string &&key) {
-        if (map_.find(key) == nullptr) {
+        if (map_.get(key) == nullptr) {
             return "NULL";
         }
         else {
-            auto value_ptr = key_value_map_.find(key);
+            auto value_ptr = key_value_map_.get(key);
             if (value_ptr != nullptr) {
                 return *value_ptr;
             }
-            db_stream_.seekg(*map_.find(key) * (key_alignment_ + value_alignment_) + key_alignment_,
+            db_stream_.seekg(*map_.get(key) * (key_alignment_ + value_alignment_) + key_alignment_,
                              ios::beg);
             db_stream_.read(buffer_chars_, value_alignment_);
             string result_string(buffer_chars_, 0, value_alignment_);
@@ -257,16 +257,16 @@ public:
             init_db_file(value);
             is_first_in_ = false;
         }
-        if (map_.find(key) == nullptr) {
+        if (map_.get(key) == nullptr) {
             index_stream_ << key << "\n" << to_string(db_file_index_) << "\n" << flush;
             map_.insert_or_replace(key, db_file_index_);
             db_file_index_++;
             db_stream_.seekp(0, ios::end);
         } else {
-            db_stream_.seekp(*map_.find(key) * (key_alignment_ + value_alignment_), ios::beg);
+            db_stream_.seekp(*map_.get(key) * (key_alignment_ + value_alignment_), ios::beg);
         }
         db_stream_ << left << setw(key_alignment_) << key << left << setw(value_alignment_) << value << flush;
-        if (key_value_map_.size() < cache_max_size_ || key_value_map_.find(key) != nullptr)
+        if (key_value_map_.size() < cache_max_size_ || key_value_map_.get(key) != nullptr)
             key_value_map_.insert_or_replace(key, value);
     }
 };

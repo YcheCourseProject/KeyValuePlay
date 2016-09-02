@@ -240,7 +240,7 @@ public:
         return current_size_;
     }
 
-    inline string *find(const string &key) {
+    inline string *get(const string &key) {
         auto hash_result = HASH_FUNC(key);
         //linear probing, judge if there is a existence in memory
         for (auto index = hash_result % max_slot_size_;
@@ -350,7 +350,7 @@ public:
     }
 
     inline string get(string &&key) { //读取KV
-        auto result = map_.find(key);
+        auto result = map_.get(key);
         if (result != nullptr) {
             return *result;
         }

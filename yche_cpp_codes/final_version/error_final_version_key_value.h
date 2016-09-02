@@ -46,7 +46,7 @@ public:
         hash_table_.resize(size);
     }
 
-    string *find(const string &key) {
+    string *get(const string &key) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].key_str_.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].key_str_ == key) {
@@ -160,7 +160,7 @@ public:
     }
 
     string get(string key) {
-        auto str_ptr = map_.find(key);
+        auto str_ptr = map_.get(key);
         if (str_ptr == nullptr) {
             return "NULL";
         }

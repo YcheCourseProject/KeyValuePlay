@@ -40,7 +40,7 @@ private:
 public:
     inline yche_map() : hash_table_(slot_num) {}
 
-    inline T *find(const string &key) {
+    inline T *get(const string &key) {
         auto index = hash_func(key) % max_slot_size_;
         for (; hash_table_[index].first.size() != 0; index = (index + 1) % max_slot_size_) {
             if (hash_table_[index].first == key) {
@@ -109,11 +109,11 @@ public:
     }
 
     inline string get(string key) {
-        if (map_.find(key) == nullptr) {
+        if (map_.get(key) == nullptr) {
             return "NULL";
         }
         else {
-            auto *index_pair = map_.find(key);
+            auto *index_pair = map_.get(key);
             db_stream_.seekg(index_pair->first, ios::beg);
             db_stream_.read(value_buffer, index_pair->second);
             return string(value_buffer, 0, index_pair->second);
