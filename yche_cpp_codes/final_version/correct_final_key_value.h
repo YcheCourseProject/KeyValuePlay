@@ -13,6 +13,7 @@
 
 using namespace std;
 string empty_str;
+
 hash<string> hash_func;
 
 struct key_value_info {

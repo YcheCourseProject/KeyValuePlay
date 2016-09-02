@@ -18,7 +18,13 @@
 using namespace std;
 constexpr int INT_SIZE = sizeof(int);
 
-hash<string> hash_func;
+struct fast_hash_func {
+    size_t operator()(const string &__s) const noexcept {
+        return std::_Hash_impl::hash(__s.data(), 8);
+    }
+};
+
+fast_hash_func hash_func;
 
 struct key_value_info {
     string key_str_;
