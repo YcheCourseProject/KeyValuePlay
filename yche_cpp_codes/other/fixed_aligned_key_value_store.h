@@ -102,7 +102,7 @@ private:
     yche_map<int> map_;
     yche_map<string> key_value_map_;
     fstream index_stream_;
-    fstream db_stream_;
+    fstream val_stream_;
     int db_file_index_{0};
 
     int key_alignment_{0};
@@ -148,18 +148,18 @@ private:
 
     inline void read_db_info() {
         index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
-        db_stream_.open(SMALL_DB_NAME, ios::in | ios::out | ios::binary);
-        if (db_stream_.good() == true) {
+        val_stream_.open(SMALL_DB_NAME, ios::in | ios::out | ios::binary);
+        if (val_stream_.good() == true) {
             key_alignment_ = SMALL_KEY_ALIGNMENT;
             value_alignment_ = SMALL_VALUE_ALIGNMENT;
         } else {
-            db_stream_.open(MEDIUM_DB_NAME, ios::in | ios::out | ios::binary);
-            if (db_stream_.good() == true) {
+            val_stream_.open(MEDIUM_DB_NAME, ios::in | ios::out | ios::binary);
+            if (val_stream_.good() == true) {
                 key_alignment_ = MEDIUM_KEY_ALIGNMENT;
                 value_alignment_ = MEDIUM_VALUE_ALIGNMENT;
             } else {
-                db_stream_.open(LARGE_DB_NAME, ios::in | ios::out | ios::binary);
-                if (db_stream_.good() == true) {
+                val_stream_.open(LARGE_DB_NAME, ios::in | ios::out | ios::binary);
+                if (val_stream_.good() == true) {
                     key_alignment_ = LARGE_KEY_ALIGNMENT;
                     value_alignment_ = LARGE_VALUE_ALIGNMENT;
                 }
@@ -183,21 +183,21 @@ private:
         string key;
         string value;
         for (auto i = 0; key_value_map_.size() < cache_max_size_; ++i) {
-            db_stream_.seekg(i * (value_alignment_ + key_alignment_), ios::beg);
-            db_stream_.read(key_string, key_alignment_);
-            if (db_stream_.good() == false) {
-                db_stream_.clear();
+            val_stream_.seekg(i * (value_alignment_ + key_alignment_), ios::beg);
+            val_stream_.read(key_string, key_alignment_);
+            if (val_stream_.good() == false) {
+                val_stream_.clear();
                 break;
             }
-            db_stream_.seekg(i * (value_alignment_ + key_alignment_) + key_alignment_, ios::beg);
-            db_stream_.read(value_string, value_alignment_);
+            val_stream_.seekg(i * (value_alignment_ + key_alignment_) + key_alignment_, ios::beg);
+            val_stream_.read(value_string, value_alignment_);
             key = string(key_string);
             trim_right_blank(key);
             value = string(value_string);
             trim_right_blank(value);
             key_value_map_.insert_or_replace(key, value);
         }
-        db_stream_.clear();
+        val_stream_.clear();
         delete[] key_string;
         delete[] value_string;
     }
@@ -217,9 +217,9 @@ private:
             key_alignment_ = LARGE_KEY_ALIGNMENT;
             value_alignment_ = LARGE_VALUE_ALIGNMENT;
         }
-        db_stream_.open(db_file_name, ios::out | ios::trunc);
-        db_stream_.close();
-        db_stream_.open(db_file_name, ios::in | ios::out | ios::binary);
+        val_stream_.open(db_file_name, ios::out | ios::trunc);
+        val_stream_.close();
+        val_stream_.open(db_file_name, ios::in | ios::out | ios::binary);
         set_cache_max_size();
     }
 
@@ -243,9 +243,9 @@ public:
             if (value_ptr != nullptr) {
                 return *value_ptr;
             }
-            db_stream_.seekg(*map_.get(key) * (key_alignment_ + value_alignment_) + key_alignment_,
+            val_stream_.seekg(*map_.get(key) * (key_alignment_ + value_alignment_) + key_alignment_,
                              ios::beg);
-            db_stream_.read(buffer_chars_, value_alignment_);
+            val_stream_.read(buffer_chars_, value_alignment_);
             string result_string(buffer_chars_, 0, value_alignment_);
             trim_right_blank(result_string);
             return result_string;
@@ -261,11 +261,11 @@ public:
             index_stream_ << key << "\n" << to_string(db_file_index_) << "\n" << flush;
             map_.insert_or_replace(key, db_file_index_);
             db_file_index_++;
-            db_stream_.seekp(0, ios::end);
+            val_stream_.seekp(0, ios::end);
         } else {
-            db_stream_.seekp(*map_.get(key) * (key_alignment_ + value_alignment_), ios::beg);
+            val_stream_.seekp(*map_.get(key) * (key_alignment_ + value_alignment_), ios::beg);
         }
-        db_stream_ << left << setw(key_alignment_) << key << left << setw(value_alignment_) << value << flush;
+        val_stream_ << left << setw(key_alignment_) << key << left << setw(value_alignment_) << value << flush;
         if (key_value_map_.size() < cache_max_size_ || key_value_map_.get(key) != nullptr)
             key_value_map_.insert_or_replace(key, value);
     }

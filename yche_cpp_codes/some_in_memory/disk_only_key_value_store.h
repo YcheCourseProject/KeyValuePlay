@@ -77,7 +77,7 @@ class Answer {
 private:
     unordered_map<string, pair<int, int>> map_;
     fstream index_stream_;
-    fstream db_stream_;
+    fstream val_stream_;
     circular_buff *circular_buff_ptr_;
 
     int val_index_{0};
@@ -133,7 +133,7 @@ public:
     Answer() {
         value_buffer = new char[1024 * 32];
         index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
-        db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
+        val_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
         read_index_info();
     }
 
@@ -154,8 +154,8 @@ public:
                 return string(ptr, 0, index_pair.second);
             }
             else {
-                db_stream_.seekg(index_pair.first, ios::beg);
-                db_stream_.read(value_buffer, index_pair.second);
+                val_stream_.seekg(index_pair.first, ios::beg);
+                val_stream_.read(value_buffer, index_pair.second);
                 return string(value_buffer, 0, index_pair.second);
 
             }
@@ -173,8 +173,8 @@ public:
         index_stream_ << val_index_ << "\n";
         index_stream_ << val_len_ << "\n" << flush;
 
-        db_stream_.seekp(0, ios::end);
-        db_stream_ << value << flush;
+        val_stream_.seekp(0, ios::end);
+        val_stream_ << value << flush;
 
         circular_buff_ptr_->push_back(value.c_str(), val_len_);
         map_[key] = make_pair(val_index_, val_len_);

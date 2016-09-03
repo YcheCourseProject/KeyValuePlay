@@ -10,12 +10,12 @@
 #include <unistd.h>
 #include "fcntl.h"
 
-constexpr int INT_SIZE = sizeof(int);
 #define INDEX_NAME "index.meta"
 #define DB_NAME "value.db"
 #define unlikely(x) __builtin_expect((x),0)
 
 using namespace std;
+constexpr int INT_SIZE = sizeof(int);
 string empty_str;
 const static string NULL_STR = "NULL";
 
@@ -30,7 +30,7 @@ struct key_value_info {
 
 class yche_map {
 private:
-    fstream db_stream_;
+    ifstream val_stream_;
     vector<key_value_info> hash_table_;
     char *value_buffer;
     string result_str_;
@@ -40,7 +40,7 @@ private:
 
 public:
     yche_map() {
-        db_stream_.open(DB_NAME, ios::in | ios::binary);
+        val_stream_.open(DB_NAME, ios::binary);
         value_buffer = new char[1024 * 32];
         result_str_.reserve(1024 * 32);
     }
@@ -65,8 +65,8 @@ public:
                 if (hash_table_[index].val_str_.size() > 0)
                     return hash_table_[index].val_str_;
                 else {
-                    db_stream_.seekg(hash_table_[index].val_index_, ios::beg);
-                    db_stream_.read(value_buffer, hash_table_[index].val_len_);
+                    val_stream_.seekg(hash_table_[index].val_index_, ios::beg);
+                    val_stream_.read(value_buffer, hash_table_[index].val_len_);
                     result_str_.assign(value_buffer, 0, hash_table_[index].val_len_);
                     return result_str_;
                 }
@@ -101,7 +101,7 @@ class Answer {
 private:
     yche_map map_;
     ofstream index_stream_;
-    ofstream db_stream_;
+    ofstream val_stream_;
     int key_len_{0};
     int val_index_{0};
     int val_len_{0};
@@ -168,7 +168,7 @@ public:
         get_db_file_size();
         read_file();
         index_stream_.open(INDEX_NAME, ios::app | ios::binary);
-        db_stream_.open(DB_NAME, ios::app | ios::binary);
+        val_stream_.open(DB_NAME, ios::app | ios::binary);
     }
 
     string get(string key) {
@@ -185,13 +185,13 @@ public:
         index_stream_.write((const char *) &val_index_, INT_SIZE);
         index_stream_.write((const char *) &val_len_, INT_SIZE);
 
-        db_stream_.write(value.c_str(), val_len_);
+        val_stream_.write(value.c_str(), val_len_);
 
         map_.put(key, val_index_, val_len_, value);
         val_index_ += val_len_;
 
         index_stream_.flush();
-        db_stream_.flush();
+        val_stream_.flush();
     }
 };
 

@@ -28,7 +28,7 @@ struct key_value_info {
 template<size_t slot_num = 100>
 class yche_map {
 private:
-    fstream db_stream_;
+    fstream val_stream_;
 
     vector<key_value_info> hash_table_;
     queue<int> slot_index_queue_;
@@ -41,7 +41,7 @@ private:
 
 public:
     inline yche_map() : hash_table_(slot_num) {
-        db_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
+        val_stream_.open(DB_NAME, ios::in | ios::out | ios::app | ios::binary);
         val_buffer = new char[1024 * 32];
     }
 
@@ -78,8 +78,8 @@ public:
                 if (hash_table_[index].val_str_.size() > 0)
                     return &hash_table_[index].val_str_;
                 else {
-                    db_stream_.seekg(hash_table_[index].val_index_, ios::beg);
-                    db_stream_.read(val_buffer, hash_table_[index].val_len_);
+                    val_stream_.seekg(hash_table_[index].val_index_, ios::beg);
+                    val_stream_.read(val_buffer, hash_table_[index].val_len_);
                     result_str_ = string(val_buffer, 0, hash_table_[index].val_len_);
                     return &result_str_;
                 }
@@ -91,8 +91,8 @@ public:
     inline void insert_or_replace(const string &key, int value_index, int value_length, const string value = "",
                                   bool is_write = false) {
         if (is_write) {
-            db_stream_.seekp(0, ios::end);
-            db_stream_ << value << flush;
+            val_stream_.seekp(0, ios::end);
+            val_stream_ << value << flush;
         }
 
         auto index = hash_func(key) % max_slot_size_;
@@ -124,7 +124,7 @@ class Answer {
 private:
     yche_map<> map_;
     fstream index_stream_;
-    fstream db_stream_;
+    fstream val_stream_;
     int val_index_{0};
     int val_len_{0};
     int threshold_{0};
@@ -133,7 +133,7 @@ private:
     inline void read_index_info() {
         char *value_buf_ = new char[32 * 1024];
         index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
-        db_stream_.open(DB_NAME, ios::in | ios::binary);
+        val_stream_.open(DB_NAME, ios::in | ios::binary);
         string key_str;
         string prefix_sum_index_str;
         string length_str;
@@ -147,8 +147,8 @@ private:
                 val_len_ = stoi(length_str);
                 init_map();
                 if (val_index_ >= threshold_) {
-                    db_stream_.seekg(val_index_, ios::beg);
-                    db_stream_.read(value_buf_, val_len_);
+                    val_stream_.seekg(val_index_, ios::beg);
+                    val_stream_.read(value_buf_, val_len_);
                     value_str = string(value_buf_, 0, val_len_);
                     map_.insert_or_replace(key_str, val_index_, val_len_, value_str);
                 }
@@ -162,8 +162,8 @@ private:
     }
 
     inline void init_map() {
-        db_stream_.seekg(0, ios::end);
-        int file_size = db_stream_.tellg();
+        val_stream_.seekg(0, ios::end);
+        int file_size = val_stream_.tellg();
         if (!is_init_) {
             if (val_len_ <= 160) {
                 map_.set_max_cached_memory_size(20000000);

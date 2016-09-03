@@ -67,7 +67,7 @@ class Answer {
 private:
     yche_map<pair<int, int>> map_;
     fstream index_stream_;
-    fstream db_stream_;
+    fstream val_stream_;
     int db_file_descriptor_;
     char *db_mmap_;
     char *db_read_mmap_;
@@ -100,7 +100,7 @@ public:
         value_buffer = new char[1024 * 32];
         index_stream_.open(INDEX_NAME, ios::in | ios::out | ios::app | ios::binary);
         db_file_descriptor_ = open(DB_NAME, O_RDWR | O_CREAT, 0600);
-        db_stream_.open(DB_NAME, ios::in | ios::binary);
+        val_stream_.open(DB_NAME, ios::in | ios::binary);
         read_index_info();
     }
 
@@ -114,8 +114,8 @@ public:
         }
         else {
             auto *index_pair = map_.get(key);
-            db_stream_.seekg(index_pair->first, ios::beg);
-            db_stream_.read(value_buffer, index_pair->second);
+            val_stream_.seekg(index_pair->first, ios::beg);
+            val_stream_.read(value_buffer, index_pair->second);
             return string(value_buffer, 0, index_pair->second);
         }
     }
